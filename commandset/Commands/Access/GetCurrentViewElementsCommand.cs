@@ -20,28 +20,28 @@ namespace RevitMCPCommandSet.Commands.Access
         {
             try
             {
-                // 解析参数
+                // 파라미터 파싱
                 List<string> modelCategoryList = parameters?["modelCategoryList"]?.ToObject<List<string>>() ?? new List<string>();
                 List<string> annotationCategoryList = parameters?["annotationCategoryList"]?.ToObject<List<string>>() ?? new List<string>();
                 bool includeHidden = parameters?["includeHidden"]?.Value<bool>() ?? false;
                 int limit = parameters?["limit"]?.Value<int>() ?? 100;
 
-                // 设置查询参数
+                // 조회 파라미터 설정
                 _handler.SetQueryParameters(modelCategoryList, annotationCategoryList, includeHidden, limit);
 
-                // 触发外部事件并等待完成
-                if (RaiseAndWaitForCompletion(60000)) // 60秒超时
+                // 외부 이벤트를 트리거하고 완료 대기
+                if (RaiseAndWaitForCompletion(60000)) // 60초 타임아웃
                 {
                     return _handler.ResultInfo;
                 }
                 else
                 {
-                    throw new TimeoutException("获取视图元素超时");
+                    throw new TimeoutException("뷰 엘리먼트 가져오기 시간 초과");
                 }
             }
             catch (Exception ex)
             {
-                throw new Exception($"获取视图元素失败: {ex.Message}");
+                throw new Exception($"뷰 엘리먼트 가져오기 실패: {ex.Message}");
             }
         }
     }

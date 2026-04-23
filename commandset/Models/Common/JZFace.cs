@@ -3,12 +3,12 @@
 namespace RevitMCPCommandSet.Models.Common;
 
 /// <summary>
-///     三维面
+///     3차원 면
 /// </summary>
 public class JZFace
 {
     /// <summary>
-    ///     构造函数
+    ///     생성자
     /// </summary>
     public JZFace()
     {
@@ -17,13 +17,13 @@ public class JZFace
     }
 
     /// <summary>
-    ///     外环（List<List<JZLine>> 类型）
+    ///     외부 루프 (List<List<JZLine>> 타입)
     /// </summary>
     [JsonProperty("outerLoop")]
     public List<JZLine> OuterLoop { get; set; }
 
     /// <summary>
-    ///     内环（List<JZLine> 类型，表示一个或多个内环）
+    ///     내부 루프 (List<JZLine> 타입, 하나 또는 여러 개의 내부 루프를 의미)
     /// </summary>
     [JsonProperty("innerLoops")]
     public List<List<JZLine>> InnerLoops { get; set; }

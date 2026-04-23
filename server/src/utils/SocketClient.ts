@@ -21,11 +21,11 @@ export class RevitClientConnection {
     });
 
     this.socket.on("data", (data) => {
-      // 将接收到的数据添加到缓冲区
+      // 수신한 데이터를 버퍼에 추가
       const dataString = data.toString();
       this.buffer += dataString;
 
-      // 尝试解析完整的JSON响应
+      // 완전한 JSON 응답을 파싱 시도
       this.processBuffer();
     });
 
@@ -41,13 +41,13 @@ export class RevitClientConnection {
 
   private processBuffer(): void {
     try {
-      // 尝试解析JSON
+      // JSON 파싱 시도
       const response = JSON.parse(this.buffer);
-      // 如果成功解析，处理响应并清空缓冲区
+      // 파싱에 성공하면 응답을 처리하고 버퍼를 비움
       this.handleResponse(this.buffer);
       this.buffer = "";
     } catch (e) {
-      // 如果解析失败，可能是因为数据不完整，继续等待更多数据
+      // 파싱에 실패하면 데이터가 완전하지 않을 수 있으므로 더 많은 데이터를 계속 대기
     }
   }
 
@@ -77,7 +77,7 @@ export class RevitClientConnection {
   private handleResponse(responseData: string): void {
     try {
       const response = JSON.parse(responseData);
-      // 从响应中获取ID
+      // 응답에서 ID 가져오기
       const requestId = response.id || "default";
 
       const callback = this.responseCallbacks.get(requestId);
@@ -97,10 +97,10 @@ export class RevitClientConnection {
           this.connect();
         }
 
-        // 生成请求ID
+        // 요청 ID 생성
         const requestId = this.generateRequestId();
 
-        // 创建符合JSON-RPC标准的请求对象
+        // JSON-RPC 표준에 맞는 요청 객체 생성
         const commandObj = {
           jsonrpc: "2.0",
           method: command,
@@ -108,7 +108,7 @@ export class RevitClientConnection {
           id: requestId,
         };
 
-        // 存储回调函数
+        // 콜백 함수 저장
         this.responseCallbacks.set(requestId, (responseData) => {
           try {
             const response = JSON.parse(responseData);
@@ -128,17 +128,17 @@ export class RevitClientConnection {
           }
         });
 
-        // 发送命令
+        // 명령 전송
         const commandString = JSON.stringify(commandObj);
         this.socket.write(commandString);
 
-        // 设置超时
+        // 타임아웃 설정
         setTimeout(() => {
           if (this.responseCallbacks.has(requestId)) {
             this.responseCallbacks.delete(requestId);
             reject(new Error(`Command timed out after 2 minutes: ${command}`));
           }
-        }, 120000); // 2分钟超时
+        }, 120000); // 2분 타임아웃
       } catch (error) {
         reject(error);
       }

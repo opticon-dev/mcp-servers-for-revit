@@ -6,19 +6,19 @@ namespace RevitMCPCommandSet.Services
 {
     public class GetAvailableFamilyTypesEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
     {
-        // 执行结果
+        // 실행 결과
         public List<FamilyTypeInfo> ResultFamilyTypes { get; private set; }
 
-        // 状态同步对象
+        // 상태 동기화 객체
         public bool TaskCompleted { get; private set; }
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
 
-        // 过滤条件
+        // 필터 조건
         public List<string> CategoryList { get; set; }
         public string FamilyNameFilter { get; set; }
         public int? Limit { get; set; }
 
-        // 执行时间，略微比调用超时更短一些
+        // 실행 시간, 호출 타임아웃보다 약간 짧게 설정
         public bool WaitForCompletion(int timeoutMilliseconds = 12500)
         {
             _resetEvent.Reset();
@@ -31,18 +31,18 @@ namespace RevitMCPCommandSet.Services
             {
                 var doc = app.ActiveUIDocument.Document;
 
-                // 可载入族
+                // 로드 가능한 패밀리
                 var familySymbols = new FilteredElementCollector(doc)
                     .OfClass(typeof(FamilySymbol))
                     .Cast<FamilySymbol>();
-                // 系统族类型（墙、楼板等）
+                // 시스템 패밀리 타입 (벽, 바닥 등)
                 var systemTypes = new List<ElementType>();
                 systemTypes.AddRange(new FilteredElementCollector(doc).OfClass(typeof(WallType)).Cast<ElementType>());
                 systemTypes.AddRange(new FilteredElementCollector(doc).OfClass(typeof(FloorType)).Cast<ElementType>());
                 systemTypes.AddRange(new FilteredElementCollector(doc).OfClass(typeof(RoofType)).Cast<ElementType>());
                 systemTypes.AddRange(new FilteredElementCollector(doc).OfClass(typeof(CeilingType)).Cast<ElementType>());
                 systemTypes.AddRange(new FilteredElementCollector(doc).OfClass(typeof(CurtainSystemType)).Cast<ElementType>());
-                // 合并结果
+                // 결과 병합
                 var allElements = familySymbols
                     .Cast<ElementType>()
                     .Concat(systemTypes)
@@ -50,7 +50,7 @@ namespace RevitMCPCommandSet.Services
 
                 IEnumerable<ElementType> filteredElements = allElements;
 
-                // 类别过滤
+                // 카테고리 필터링
                 if (CategoryList != null && CategoryList.Any())
                 {
                     var validCategoryIds = new List<int>();
@@ -76,7 +76,7 @@ namespace RevitMCPCommandSet.Services
                     }
                 }
 
-                // 名称模糊匹配（同时匹配族名和类型名）
+                // 이름 유사 일치 (패밀리 이름과 타입 이름 모두 매칭)
                 if (!string.IsNullOrEmpty(FamilyNameFilter))
                 {
                     filteredElements = filteredElements.Where(et =>
@@ -89,13 +89,13 @@ namespace RevitMCPCommandSet.Services
                     });
                 }
 
-                // 限制返回数量
+                // 반환 수량 제한
                 if (Limit.HasValue && Limit.Value > 0)
                 {
                     filteredElements = filteredElements.Take(Limit.Value);
                 }
 
-                // 转换为FamilyTypeInfo列表
+                // FamilyTypeInfo 목록으로 변환
                 ResultFamilyTypes = filteredElements.Select(et =>
                 {
                     string familyName;
@@ -124,7 +124,7 @@ namespace RevitMCPCommandSet.Services
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("Error", "获取族类型失败: " + ex.Message);
+                TaskDialog.Show("Error", "패밀리 타입 가져오기 실패: " + ex.Message);
             }
             finally
             {

@@ -4,14 +4,14 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 export async function registerTools(server: McpServer) {
-  // 获取当前文件的目录路径
+  // 현재 파일의 디렉터리 경로 가져오기
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
 
-  // 读取tools目录下的所有文件
+  // tools 디렉터리 아래의 모든 파일 읽기
   const files = fs.readdirSync(__dirname);
 
-  // 过滤出.ts或.js文件，但排除index文件和register文件
+  // .ts 또는 .js 파일만 필터링하되 index 파일과 register 파일은 제외
   const toolFiles = files.filter(
     (file) =>
       (file.endsWith(".ts") || file.endsWith(".js")) &&
@@ -21,28 +21,28 @@ export async function registerTools(server: McpServer) {
       file !== "register.js"
   );
 
-  // 动态导入并注册每个工具
+  // 각 도구를 동적으로 가져와 등록
   for (const file of toolFiles) {
     try {
-      // 构建导入路径
+      // 가져오기 경로 구성
       const importPath = `./${file.replace(/\.(ts|js)$/, ".js")}`;
 
-      // 动态导入模块
+      // 모듈 동적 가져오기
       const module = await import(importPath);
 
-      // 查找并执行注册函数
+      // 등록 함수를 찾아 실행
       const registerFunctionName = Object.keys(module).find(
         (key) => key.startsWith("register") && typeof module[key] === "function"
       );
 
       if (registerFunctionName) {
         module[registerFunctionName](server);
-        console.error(`已注册工具: ${file}`);
+        console.error(`등록된 도구: ${file}`);
       } else {
-        console.warn(`警告: 在文件 ${file} 中未找到注册函数`);
+        console.warn(`경고: 파일 ${file}에서 등록 함수를 찾지 못했습니다`);
       }
     } catch (error) {
-      console.error(`注册工具 ${file} 时出错:`, error);
+      console.error(`도구 ${file} 등록 중 오류 발생:`, error);
     }
   }
 }

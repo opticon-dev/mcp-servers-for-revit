@@ -18,20 +18,20 @@ namespace RevitMCPCommandSet.Services
         private Autodesk.Revit.ApplicationServices.Application app => uiApp.Application;
 
         /// <summary>
-        /// 事件等待对象
+        /// 이벤트 대기 객체
         /// </summary>
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
         /// <summary>
-        /// 创建数据（传入数据）
+        /// 생성 데이터 (입력 데이터)
         /// </summary>
         public OperationSetting OperationData { get; private set; }
         /// <summary>
-        /// 执行结果（传出数据）
+        /// 실행 결과 (출력 데이터)
         /// </summary>
         public AIResult<string> Result { get; private set; }
 
         /// <summary>
-        /// 设置创建的参数
+        /// 생성 파라미터 설정
         /// </summary>
         public void SetParameters(OperationSetting data)
         {
@@ -49,7 +49,7 @@ namespace RevitMCPCommandSet.Services
                 Result = new AIResult<string>
                 {
                     Success = true,
-                    Message = $"成功执行操作",
+                    Message = $"작업이 성공적으로 실행됨",
                 };
             }
             catch (Exception ex)
@@ -57,20 +57,20 @@ namespace RevitMCPCommandSet.Services
                 Result = new AIResult<string>
                 {
                     Success = false,
-                    Message = $"操作元素时出错: {ex.Message}",
+                    Message = $"엘리먼트 조작 중 오류: {ex.Message}",
                 };
             }
             finally
             {
-                _resetEvent.Set(); // 通知等待线程操作已完成
+                _resetEvent.Set(); // 대기 스레드에게 작업 완료 알림
             }
         }
 
         /// <summary>
-        /// 等待创建完成
+        /// 생성 완료 대기
         /// </summary>
-        /// <param name="timeoutMilliseconds">超时时间（毫秒）</param>
-        /// <returns>操作是否在超时前完成</returns>
+        /// <param name="timeoutMilliseconds">타임아웃 시간 (밀리초)</param>
+        /// <returns>작업이 타임아웃 이전에 완료되었는지 여부</returns>
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)
         {
             _resetEvent.Reset();
@@ -78,79 +78,79 @@ namespace RevitMCPCommandSet.Services
         }
 
         /// <summary>
-        /// IExternalEventHandler.GetName 实现
+        /// IExternalEventHandler.GetName 구현
         /// </summary>
         public string GetName()
         {
-            return "操作元素";
+            return "엘리먼트 조작";
         }
 
         /// <summary>
-        /// 根据操作设置执行相应的图元操作
+        /// 작업 설정에 따라 해당 엘리먼트 작업을 수행
         /// </summary>
-        /// <param name="uidoc">当前UI文档</param>
-        /// <param name="setting">操作设置</param>
-        /// <returns>操作是否成功</returns>
+        /// <param name="uidoc">현재 UI 문서</param>
+        /// <param name="setting">작업 설정</param>
+        /// <returns>작업 성공 여부</returns>
         public static bool ExecuteElementOperation(UIDocument uidoc, OperationSetting setting)
         {
-            // 检查参数有效性
+            // 파라미터 유효성 확인
             if (uidoc == null || uidoc.Document == null || setting == null || setting.ElementIds == null ||
                 (setting.ElementIds.Count == 0 && setting.Action.ToLower() != "resetisolate"))
-                throw new Exception("参数无效：文档为空或没有指定要操作的图元");
+                throw new Exception("파라미터가 유효하지 않음: 문서가 비어 있거나 조작할 엘리먼트가 지정되지 않음");
 
             Document doc = uidoc.Document;
 
-            // 将int类型的元素ID转换为ElementId类型
+            // int 타입의 엘리먼트 ID를 ElementId 타입으로 변환
             ICollection<ElementId> elementIds = setting.ElementIds.Select(id => new ElementId(id)).ToList();
 
-            // 解析操作类型
+            // 작업 타입 파싱
             ElementOperationType action;
             if (!Enum.TryParse(setting.Action, true, out action))
             {
-                throw new Exception($"未支持的操作类型：{setting.Action}");
+                throw new Exception($"지원되지 않는 작업 타입: {setting.Action}");
             }
 
-            // 根据操作类型执行不同的操作
+            // 작업 타입에 따라 다른 작업 수행
             switch (action)
             {
                 case ElementOperationType.Select:
-                    // 选择元素
+                    // 엘리먼트 선택
                     uidoc.Selection.SetElementIds(elementIds);
                     return true;
 
                 case ElementOperationType.SelectionBox:
-                    // 在3D视图中创建剖切框
+                    // 3D 뷰에서 섹션 박스 생성
 
-                    // 检查当前视图是否为3D视图
+                    // 현재 뷰가 3D 뷰인지 확인
                     View3D targetView;
 
                     if (doc.ActiveView is View3D)
                     {
-                        // 如果当前视图是3D视图，在当前视图中创建剖切框
+                        // 현재 뷰가 3D 뷰이면, 현재 뷰에서 섹션 박스 생성
                         targetView = doc.ActiveView as View3D;
                     }
                     else
                     {
-                        // 如果当前视图不是3D视图，寻找默认3D视图
+                        // 현재 뷰가 3D 뷰가 아니면, 기본 3D 뷰를 찾음
                         FilteredElementCollector collector = new FilteredElementCollector(doc);
                         collector.OfClass(typeof(View3D));
 
-                        // 尝试找到默认3D视图或任何其他可用的3D视图
+                        // 기본 3D 뷰 또는 사용 가능한 다른 3D 뷰를 찾음
                         targetView = collector
                             .Cast<View3D>()
                             .FirstOrDefault(v => !v.IsTemplate && !v.IsLocked && (v.Name.Contains("{3D}") || v.Name.Contains("Default 3D")));
 
                         if (targetView == null)
                         {
-                            // 如果没有找到合适的3D视图，抛出异常
-                            throw new Exception("无法找到合适的3D视图用于创建剖切框");
+                            // 적합한 3D 뷰를 찾지 못한 경우, 예외 발생
+                            throw new Exception("섹션 박스를 생성할 적합한 3D 뷰를 찾을 수 없음");
                         }
 
-                        // 激活该3D视图
+                        // 해당 3D 뷰 활성화
                         uidoc.ActiveView = targetView;
                     }
 
-                    // 计算所选元素的包围盒
+                    // 선택된 엘리먼트의 경계 상자 계산
                     BoundingBoxXYZ boundingBox = null;
 
                     foreach (ElementId id in elementIds)
@@ -170,7 +170,7 @@ namespace RevitMCPCommandSet.Services
                             }
                             else
                             {
-                                // 扩展边界框以包含当前元素
+                                // 현재 엘리먼트를 포함하도록 경계 상자 확장
                                 boundingBox.Min = new XYZ(
                                     Math.Min(boundingBox.Min.X, elemBox.Min.X),
                                     Math.Min(boundingBox.Min.Y, elemBox.Min.Y),
@@ -186,16 +186,16 @@ namespace RevitMCPCommandSet.Services
 
                     if (boundingBox == null)
                     {
-                        throw new Exception("无法为所选元素创建边界框");
+                        throw new Exception("선택된 엘리먼트에 대한 경계 상자를 생성할 수 없음");
                     }
 
-                    // 增加边界框尺寸，使其略大于元素
-                    double offset = 1.0; // 1英尺的偏移
+                    // 경계 상자 크기를 키워 엘리먼트보다 약간 크게 만듦
+                    double offset = 1.0; // 1피트 오프셋
                     boundingBox.Min = new XYZ(boundingBox.Min.X - offset, boundingBox.Min.Y - offset, boundingBox.Min.Z - offset);
                     boundingBox.Max = new XYZ(boundingBox.Max.X + offset, boundingBox.Max.Y + offset, boundingBox.Max.Z + offset);
 
-                    // 在3D视图中启用并设置剖切框
-                    using (Transaction trans = new Transaction(doc, "创建剖切框"))
+                    // 3D 뷰에서 섹션 박스 활성화 및 설정
+                    using (Transaction trans = new Transaction(doc, "섹션 박스 생성"))
                     {
                         trans.Start();
                         targetView.IsSectionBoxActive = true;
@@ -203,39 +203,39 @@ namespace RevitMCPCommandSet.Services
                         trans.Commit();
                     }
 
-                    // 移动到视图中心
+                    // 뷰 중심으로 이동
                     uidoc.ShowElements(elementIds);
                     return true;
 
                 case ElementOperationType.SetColor:
-                    // 将元素设置为指定颜色
-                    using (Transaction trans = new Transaction(doc, "设置元素颜色"))
+                    // 엘리먼트를 지정된 색상으로 설정
+                    using (Transaction trans = new Transaction(doc, "엘리먼트 색상 설정"))
                     {
                         trans.Start();
                         SetElementsColor(doc, elementIds, setting.ColorValue);
                         trans.Commit();
                     }
-                    // 滚动到这些元素使其可见
+                    // 이 엘리먼트들이 보이도록 스크롤
                     uidoc.ShowElements(elementIds);
                     return true;
 
 
                 case ElementOperationType.SetTransparency:
-                    // 设置元素在当前视图中的透明度
-                    using (Transaction trans = new Transaction(doc, "设置元素透明度"))
+                    // 현재 뷰에서 엘리먼트의 투명도 설정
+                    using (Transaction trans = new Transaction(doc, "엘리먼트 투명도 설정"))
                     {
                         trans.Start();
 
-                        // 创建图形覆盖设置对象
+                        // 그래픽 오버라이드 설정 객체 생성
                         OverrideGraphicSettings overrideSettings = new OverrideGraphicSettings();
 
-                        // 设置透明度(确保值在0-100范围内)
+                        // 투명도 설정 (값이 0-100 범위 내에 있음을 보장)
                         int transparencyValue = Math.Max(0, Math.Min(100, setting.TransparencyValue));
 
-                        // 设置表面透明度
+                        // 표면 투명도 설정
                         overrideSettings.SetSurfaceTransparency(transparencyValue);
 
-                        // 对每个元素应用透明度设置
+                        // 각 엘리먼트에 투명도 설정 적용
                         foreach (ElementId id in elementIds)
                         {
                             doc.ActiveView.SetElementOverrides(id, overrideSettings);
@@ -246,8 +246,8 @@ namespace RevitMCPCommandSet.Services
                     return true;
 
                 case ElementOperationType.Delete:
-                    // 删除元素（需要事务）
-                    using (Transaction trans = new Transaction(doc, "删除元素"))
+                    // 엘리먼트 삭제 (트랜잭션 필요)
+                    using (Transaction trans = new Transaction(doc, "엘리먼트 삭제"))
                     {
                         trans.Start();
                         doc.Delete(elementIds);
@@ -256,8 +256,8 @@ namespace RevitMCPCommandSet.Services
                     return true;
 
                 case ElementOperationType.Hide:
-                    // 隐藏元素（需要活动视图和事务）
-                    using (Transaction trans = new Transaction(doc, "隐藏元素"))
+                    // 엘리먼트 숨기기 (활성 뷰와 트랜잭션 필요)
+                    using (Transaction trans = new Transaction(doc, "엘리먼트 숨기기"))
                     {
                         trans.Start();
                         doc.ActiveView.HideElements(elementIds);
@@ -266,8 +266,8 @@ namespace RevitMCPCommandSet.Services
                     return true;
 
                 case ElementOperationType.TempHide:
-                    // 临时隐藏元素（需要活动视图和事务）
-                    using (Transaction trans = new Transaction(doc, "临时隐藏元素"))
+                    // 엘리먼트 임시 숨기기 (활성 뷰와 트랜잭션 필요)
+                    using (Transaction trans = new Transaction(doc, "엘리먼트 임시 숨기기"))
                     {
                         trans.Start();
                         doc.ActiveView.HideElementsTemporary(elementIds);
@@ -276,8 +276,8 @@ namespace RevitMCPCommandSet.Services
                     return true;
 
                 case ElementOperationType.Isolate:
-                    // 隔离元素（需要活动视图和事务）
-                    using (Transaction trans = new Transaction(doc, "隔离元素"))
+                    // 엘리먼트 분리 (활성 뷰와 트랜잭션 필요)
+                    using (Transaction trans = new Transaction(doc, "엘리먼트 분리"))
                     {
                         trans.Start();
                         doc.ActiveView.IsolateElementsTemporary(elementIds);
@@ -286,8 +286,8 @@ namespace RevitMCPCommandSet.Services
                     return true;
 
                 case ElementOperationType.Unhide:
-                    // 取消隐藏元素（需要活动视图和事务）
-                    using (Transaction trans = new Transaction(doc, "取消隐藏元素"))
+                    // 엘리먼트 숨기기 해제 (활성 뷰와 트랜잭션 필요)
+                    using (Transaction trans = new Transaction(doc, "엘리먼트 숨기기 해제"))
                     {
                         trans.Start();
                         doc.ActiveView.UnhideElements(elementIds);
@@ -296,8 +296,8 @@ namespace RevitMCPCommandSet.Services
                     return true;
 
                 case ElementOperationType.ResetIsolate:
-                    // 重置隔离（需要活动视图和事务）
-                    using (Transaction trans = new Transaction(doc, "重置隔离"))
+                    // 분리 재설정 (활성 뷰와 트랜잭션 필요)
+                    using (Transaction trans = new Transaction(doc, "분리 재설정"))
                     {
                         trans.Start();
                         doc.ActiveView.DisableTemporaryViewMode(TemporaryViewMode.TemporaryHideIsolate);
@@ -306,45 +306,45 @@ namespace RevitMCPCommandSet.Services
                     return true;
 
                 default:
-                    throw new Exception($"未支持的操作类型：{setting.Action}");
+                    throw new Exception($"지원되지 않는 작업 타입: {setting.Action}");
             }
         }
 
         /// <summary>
-        /// 在视图中将指定的元素设置为指定颜色
+        /// 뷰에서 지정된 엘리먼트를 지정된 색상으로 설정
         /// </summary>
-        /// <param name="doc">文档</param>
-        /// <param name="elementIds">要设置颜色的元素ID集合</param>
-        /// <param name="elementColor">颜色值（RGB格式）</param>
+        /// <param name="doc">문서</param>
+        /// <param name="elementIds">색상을 설정할 엘리먼트 ID 컬렉션</param>
+        /// <param name="elementColor">색상 값 (RGB 형식)</param>
         private static void SetElementsColor(Document doc, ICollection<ElementId> elementIds, int[] elementColor)
         {
-            // 检查颜色数组是否有效
+            // 색상 배열이 유효한지 확인
             if (elementColor == null || elementColor.Length < 3)
             {
-                elementColor = new int[] { 255, 0, 0 }; // 默认红色
+                elementColor = new int[] { 255, 0, 0 }; // 기본 빨간색
             }
-            // 确保RGB值在0-255范围内
+            // RGB 값이 0-255 범위 내에 있음을 보장
             int r = Math.Max(0, Math.Min(255, elementColor[0]));
             int g = Math.Max(0, Math.Min(255, elementColor[1]));
             int b = Math.Max(0, Math.Min(255, elementColor[2]));
-            // 创建Revit颜色对象 - 使用byte类型转换
+            // Revit 색상 객체 생성 - byte 타입 변환 사용
             Color color = new Color((byte)r, (byte)g, (byte)b);
-            // 创建图形覆盖设置
+            // 그래픽 오버라이드 설정 생성
             OverrideGraphicSettings overrideSettings = new OverrideGraphicSettings();
-            // 设置指定颜色
+            // 지정된 색상 설정
             overrideSettings.SetProjectionLineColor(color);
             overrideSettings.SetCutLineColor(color);
             overrideSettings.SetSurfaceForegroundPatternColor(color);
             overrideSettings.SetSurfaceBackgroundPatternColor(color);
 
-            // 尝试设置填充图案
+            // 채우기 패턴 설정 시도
             try
             {
-                // 尝试获取默认的填充图案
+                // 기본 채우기 패턴 가져오기 시도
                 FilteredElementCollector patternCollector = new FilteredElementCollector(doc)
                     .OfClass(typeof(FillPatternElement));
 
-                // 首先尝试找到实心填充图案
+                // 먼저 솔리드 채우기 패턴을 찾음
                 FillPatternElement solidPattern = patternCollector
                     .Cast<FillPatternElement>()
                     .FirstOrDefault(p => p.GetFillPattern().IsSolidFill);
@@ -357,10 +357,10 @@ namespace RevitMCPCommandSet.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"设置填充图案失败: {ex.Message}");
+                throw new Exception($"채우기 패턴 설정 실패: {ex.Message}");
             }
 
-            // 对每个元素应用覆盖设置
+            // 각 엘리먼트에 오버라이드 설정 적용
             foreach (ElementId id in elementIds)
             {
                 doc.ActiveView.SetElementOverrides(id, overrideSettings);

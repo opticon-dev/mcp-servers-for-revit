@@ -10,7 +10,7 @@ using System.Reflection;
 namespace revit_mcp_plugin.Core
 {
     /// <summary>
-    /// <para>命令管理器，负责加载和管理命令</para>
+    /// <para>명령을 로드하고 관리하는 명령 관리자</para>
     /// <para>Command Manager</para>
     /// </summary>
     public class CommandManager
@@ -42,16 +42,16 @@ namespace revit_mcp_plugin.Core
         }
 
         /// <summary>
-        /// <para>加载配置文件中指定的所有命令.</para>
+        /// <para>구성 파일에 지정된 모든 명령을 로드합니다.</para>
         /// <para>Load all commands specified in the configuration file.</para>
         /// </summary>
         public void LoadCommands()
         {
-            _logger.Info("开始加载命令\nStart loading command.");
+            _logger.Info("명령 로드 시작\nStart loading command.");
             string currentVersion = _versionAdapter.GetRevitVersion();
-            _logger.Info("当前 Revit 版本: {0}\nCurrent Revit version: {0}", currentVersion);
+            _logger.Info("현재 Revit 버전: {0}\nCurrent Revit version: {0}", currentVersion);
 
-            // 从配置加载外部命令
+            // 구성에서 외부 명령 로드
             // Load external commands from the configuration file.
             foreach (var commandConfig in _configManager.Config.Commands)
             {
@@ -59,42 +59,42 @@ namespace revit_mcp_plugin.Core
                 {
                     if (!commandConfig.Enabled)
                     {
-                        _logger.Info("跳过禁用的命令: {0}\nSkipping disabled command: {0}", commandConfig.CommandName);
+                        _logger.Info("비활성화된 명령 건너뜀: {0}\nSkipping disabled command: {0}", commandConfig.CommandName);
                         continue;
                     }
 
-                    // 检查版本兼容性
+                    // 버전 호환성 확인
                     // Check Revit version compatibility.
                     if (commandConfig.SupportedRevitVersions != null &&
                         commandConfig.SupportedRevitVersions.Length > 0 &&
                         !_versionAdapter.IsVersionSupported(commandConfig.SupportedRevitVersions))
                     {
-                        _logger.Warning("命令 {0} 不支持当前 Revit 版本 {1}，已跳过\nThe command {0} is not supported by the current Revit version ({1}} and it has been skipped.",
+                        _logger.Warning("명령 {0}은 현재 Revit 버전 {1}을(를) 지원하지 않아 건너뜀\nThe command {0} is not supported by the current Revit version ({1}} and it has been skipped.",
                             commandConfig.CommandName, currentVersion);
                         continue;
                     }
 
-                    // 替换路径中的版本占位符
+                    // 경로의 버전 플레이스홀더 치환
                     // Replace version placeholder strings in paths.
                     commandConfig.AssemblyPath = commandConfig.AssemblyPath.Contains("{VERSION}")
                         ? commandConfig.AssemblyPath.Replace("{VERSION}", currentVersion)
                         : commandConfig.AssemblyPath;
 
-                    // 加载外部命令程序集
+                    // 외부 명령 어셈블리 로드
                     // Load external command assembly.
                     LoadCommandFromAssembly(commandConfig);
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error("加载命令 {0} 失败: {1}\nFailed to load command {0}: {1}", commandConfig.CommandName, ex.Message);
+                    _logger.Error("명령 {0} 로드 실패: {1}\nFailed to load command {0}: {1}", commandConfig.CommandName, ex.Message);
                 }
             }
 
-            _logger.Info("命令加载完成\nCommand loading complete.");
+            _logger.Info("명령 로드 완료\nCommand loading complete.");
         }
 
         /// <summary>
-        /// 加载特定程序集中的特定命令
+        /// 특정 어셈블리의 특정 명령 로드
         /// Loads specific commands in specific assemblies.
         /// </summary>
         /// <param name="config">Configuration class describing the command.</param>
@@ -102,12 +102,12 @@ namespace revit_mcp_plugin.Core
         {
             try
             {
-                // 确定程序集路径
+                // 어셈블리 경로 확인
                 // Determine the assembly path.
                 string assemblyPath = config.AssemblyPath;
                 if (!Path.IsPathRooted(assemblyPath))
                 {
-                    // 如果不是绝对路径，则相对于Commands目录
+                    // 절대 경로가 아니면 Commands 디렉터리 기준 상대 경로로 처리
                     // If it is not an absolute path, then it is relative to the Command's directory.
                     string baseDir = PathManager.GetCommandsDirectoryPath();
                     assemblyPath = Path.Combine(baseDir, assemblyPath);
@@ -115,15 +115,15 @@ namespace revit_mcp_plugin.Core
 
                 if (!File.Exists(assemblyPath))
                 {
-                    _logger.Error("命令程序集不存在: {0}\nCommand assembly does not exist: {0}", assemblyPath);
+                    _logger.Error("명령 어셈블리가 존재하지 않음: {0}\nCommand assembly does not exist: {0}", assemblyPath);
                     return;
                 }
 
-                // 加载程序集
+                // 어셈블리 로드
                 // Load assembly.
                 Assembly assembly = Assembly.LoadFrom(assemblyPath);
 
-                // 查找实现 IRevitCommand 接口的类型
+                // IRevitCommand 인터페이스를 구현하는 타입 찾기
                 // Find types that implement the IRevitCommand interface.
                 foreach (Type type in assembly.GetTypes())
                 {
@@ -133,22 +133,22 @@ namespace revit_mcp_plugin.Core
                     {
                         try
                         {
-                            // 创建命令实例
+                            // 명령 인스턴스 생성
                             // Create a command instance.
                             RevitMCPSDK.API.Interfaces.IRevitCommand command;
 
-                            // 检查命令是否实现了可初始化接口
+                            // 명령이 초기화 가능 인터페이스를 구현했는지 확인
                             // Check whether the command implements the initializable interface.
                             if (typeof(IRevitCommandInitializable).IsAssignableFrom(type))
                             {
-                                // 创建实例并初始化
+                                // 인스턴스를 생성하고 초기화
                                 // Create instance and initialize.
                                 command = (IRevitCommand)Activator.CreateInstance(type);
                                 ((IRevitCommandInitializable)command).Initialize(_uiApplication);
                             }
                             else
                             {
-                                // 尝试查找接受 UIApplication 的构造函数
+                                // UIApplication을 받는 생성자를 찾아 시도
                                 // Try searching for constructors that accept UIApplication.
                                 var constructor = type.GetConstructor(new[] { typeof(UIApplication) });
                                 if (constructor != null)
@@ -157,32 +157,32 @@ namespace revit_mcp_plugin.Core
                                 }
                                 else
                                 {
-                                    // 使用无参构造函数
+                                    // 매개변수 없는 생성자 사용
                                     // Use a parameterless constructor.
                                     command = (IRevitCommand)Activator.CreateInstance(type);
                                 }
                             }
 
-                            // 检查命令名称是否与配置匹配
+                            // 명령 이름이 구성과 일치하는지 확인
                             // Check whether the command name matches the configuration.
                             if (command.CommandName == config.CommandName)
                             {
                                 _commandRegistry.RegisterCommand(command);
-                                _logger.Info("创建命令实例失败 [{0}]: {1}\nFailed to create command instance [{0}]: {1}",
+                                _logger.Info("명령 인스턴스 생성 실패 [{0}]: {1}\nFailed to create command instance [{0}]: {1}",
                                     command.CommandName, Path.GetFileName(assemblyPath));
-                                break; // 找到匹配的命令后退出循环 - Exit the loop after finding a matching command.
+                                break; // 일치하는 명령을 찾으면 루프 종료 - Exit the loop after finding a matching command.
                             }
                         }
                         catch (Exception ex)
                         {
-                            _logger.Error("创建命令实例失败 [{0}]: {1}\nFailed to create command instance [{0}]: {1}", type.FullName, ex.Message);
+                            _logger.Error("명령 인스턴스 생성 실패 [{0}]: {1}\nFailed to create command instance [{0}]: {1}", type.FullName, ex.Message);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error("加载命令程序集失败: {0}\nFailed to load command assembly: {0}", ex.Message);
+                _logger.Error("명령 어셈블리 로드 실패: {0}\nFailed to load command assembly: {0}", ex.Message);
             }
         }
     }

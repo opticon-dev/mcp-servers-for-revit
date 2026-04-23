@@ -3,7 +3,7 @@
 namespace RevitMCPCommandSet.Models.Common;
 
 /// <summary>
-///     面状构件
+///     면형 구성요소
 /// </summary>
 public class SurfaceElement
 {
@@ -13,43 +13,43 @@ public class SurfaceElement
     }
 
     /// <summary>
-    ///     构件类型
+    ///     구성요소 타입
     /// </summary>
     [JsonProperty("category")]
     public string Category { get; set; } = "INVALID";
 
     /// <summary>
-    ///     类型Id
+    ///     타입 ID
     /// </summary>
     [JsonProperty("typeId")]
     public int TypeId { get; set; } = -1;
 
     /// <summary>
-    ///     壳形轮廓边界
+    ///     쉘형 윤곽 경계
     /// </summary>
     [JsonProperty("boundary")]
     public JZFace Boundary { get; set; }
 
     /// <summary>
-    ///     厚度
+    ///     두께
     /// </summary>
     [JsonProperty("thickness")]
     public double Thickness { get; set; }
 
     /// <summary>
-    ///     底部标高
+    ///     하단 레벨
     /// </summary>
     [JsonProperty("baseLevel")]
     public double BaseLevel { get; set; }
 
     /// <summary>
-    ///     底部偏移
+    ///     하단 오프셋
     /// </summary>
     [JsonProperty("baseOffset")]
     public double BaseOffset { get; set; }
 
     /// <summary>
-    ///     参数化属性
+    ///     매개변수 속성
     /// </summary>
     public Dictionary<string, double> Parameters { get; set; }
 }

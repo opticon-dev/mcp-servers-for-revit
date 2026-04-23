@@ -3,20 +3,20 @@
 namespace revit_mcp_plugin.Configuration
 {
     /// <summary>
-    /// <para>服务设置类</para>
+    /// <para>서비스 설정 클래스</para>
     /// <para>Service settings.</para>
     /// </summary>
     public class ServiceSettings
     {
         /// <summary>
-        /// <para>日志级别</para>
+        /// <para>로그 수준</para>
         /// <para>Log level.</para>
         /// </summary>
         [JsonProperty("logLevel")]
         public string LogLevel { get; set; } = "Info";
 
         /// <summary>
-        /// <para>socket服务端口</para>
+        /// <para>socket 서비스 포트</para>
         /// <para>Socket service port.</para>
         /// </summary>
         [JsonProperty("port")]

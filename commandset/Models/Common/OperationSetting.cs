@@ -8,89 +8,89 @@ using System.Threading.Tasks;
 namespace RevitMCPCommandSet.Models.Common
 {
     /// <summary>
-    /// 定义可对图元执行的操作类型
+    /// 엘리먼트에 대해 수행할 수 있는 작업 유형 정의
     /// </summary>
     public enum ElementOperationType
     {
         /// <summary>
-        /// 选择图元
+        /// 엘리먼트 선택
         /// </summary>
         Select,
 
         /// <summary>
-        /// 选择框
+        /// 선택 상자
         /// </summary>
         SelectionBox,
 
         /// <summary>
-        /// 设置图元颜色和填充
+        /// 엘리먼트 색상 및 채우기 설정
         /// </summary>
         SetColor,
 
         /// <summary>
-        /// 设置图元透明度
+        /// 엘리먼트 투명도 설정
         /// </summary>
         SetTransparency,
 
         /// <summary>
-        /// 删除图元
+        /// 엘리먼트 삭제
         /// </summary>
         Delete,
 
         /// <summary>
-        /// 隐藏图元
+        /// 엘리먼트 숨기기
         /// </summary>
         Hide,
 
         /// <summary>
-        /// 临时隐藏图元
+        /// 엘리먼트 임시 숨기기
         /// </summary>
         TempHide,
 
         /// <summary>
-        /// 隔离图元（单独显示）
+        /// 엘리먼트 분리 (단독 표시)
         /// </summary>
         Isolate,
 
         /// <summary>
-        /// 取消隐藏图元
+        /// 엘리먼트 숨기기 해제
         /// </summary>
         Unhide,
 
         /// <summary>
-        /// 重置隔离（显示所有图元）
+        /// 분리 재설정 (모든 엘리먼트 표시)
         /// </summary>
         ResetIsolate,
     }
 
 
     /// <summary>
-    /// 操作元素的设置
+    /// 엘리먼트 조작 설정
     /// </summary>
     public class OperationSetting
     {
         /// <summary>
-        /// 需要操作的元素ID列表
+        /// 조작할 엘리먼트 ID 목록
         /// </summary>
         [JsonProperty("elementIds")]
         public List<int> ElementIds = new List<int>();
 
         /// <summary>
-        /// 需要执行的动作，存储ElementOperationType枚举的string类型的值
+        /// 수행할 작업, ElementOperationType 열거형의 string 타입 값을 저장
         /// </summary>
         [JsonProperty("action")]
         public string Action { get; set; } = "Select";
 
         /// <summary>
-        /// 透明度值(0-100)，数值越大透明度越高
+        /// 투명도 값 (0-100), 값이 클수록 투명도가 높음
         /// </summary>
         [JsonProperty("transparencyValue")]
         public int TransparencyValue { get; set; } = 50;
 
         /// <summary>
-        /// 设置图元颜色（RGB格式），默认为红色
+        /// 엘리먼트 색상 설정 (RGB 형식), 기본값은 빨간색
         /// </summary>
         [JsonProperty("colorValue")]
-        public int[] ColorValue { get; set; } = new int[] { 255, 0, 0 }; // 默认红色
+        public int[] ColorValue { get; set; } = new int[] { 255, 0, 0 }; // 기본 빨간색
     }
 }

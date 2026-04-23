@@ -10,12 +10,12 @@ namespace RevitMCPCommandSet.Commands
         private TagWallsEventHandler _handler => (TagWallsEventHandler)Handler;
 
         /// <summary>
-        /// 命令名称
+        /// 명령 이름
         /// </summary>
         public override string CommandName => "tag_walls";
 
         /// <summary>
-        /// 构造函数
+        /// 생성자
         /// </summary>
         /// <param name="uiApp">Revit UIApplication</param>
         public TagWallsCommand(UIApplication uiApp)
@@ -27,7 +27,7 @@ namespace RevitMCPCommandSet.Commands
         {
             try
             {
-                // 解析参数
+                // 파라미터 파싱
                 bool useLeader = false;
                 if (parameters["useLeader"] != null)
                 {
@@ -40,22 +40,22 @@ namespace RevitMCPCommandSet.Commands
                     tagTypeId = parameters["tagTypeId"].ToString();
                 }
 
-                // 设置标记参数
+                // 태깅 파라미터 설정
                 _handler.SetParameters(useLeader, tagTypeId);
 
-                // 触发外部事件并等待完成
+                // 외부 이벤트를 트리거하고 완료 대기
                 if (RaiseAndWaitForCompletion(10000))
                 {
                     return _handler.TaggingResults;
                 }
                 else
                 {
-                    throw new TimeoutException("标记墙操作超时");
+                    throw new TimeoutException("벽 태깅 작업 시간 초과");
                 }
             }
             catch (Exception ex)
             {
-                throw new Exception($"标记墙失败: {ex.Message}");
+                throw new Exception($"벽 태깅 실패: {ex.Message}");
             }
         }
     }

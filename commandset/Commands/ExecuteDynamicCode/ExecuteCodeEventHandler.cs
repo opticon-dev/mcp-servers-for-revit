@@ -10,26 +10,26 @@ using RevitMCPSDK.API.Interfaces;
 namespace RevitMCPCommandSet.Commands.ExecuteDynamicCode
 {
     /// <summary>
-    /// 处理代码执行的外部事件处理器
+    /// 코드 실행을 처리하는 외부 이벤트 핸들러
     /// </summary>
     public class ExecuteCodeEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
     {
         public const string TransactionModeAuto = "auto";
         public const string TransactionModeNone = "none";
 
-        // 代码执行参数
+        // 코드 실행 파라미터
         private string _generatedCode;
         private object[] _executionParameters;
         private string _transactionMode = TransactionModeAuto;
 
-        // 执行结果信息
+        // 실행 결과 정보
         public ExecutionResultInfo ResultInfo { get; private set; }
 
-        // 状态同步对象
+        // 상태 동기화 객체
         public bool TaskCompleted { get; private set; }
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
 
-        // 设置要执行的代码和参数
+        // 실행할 코드와 파라미터 설정
         public void SetExecutionParameters(string code, object[] parameters = null, string transactionMode = TransactionModeAuto)
         {
             _generatedCode = code;
@@ -39,7 +39,7 @@ namespace RevitMCPCommandSet.Commands.ExecuteDynamicCode
             _resetEvent.Reset();
         }
 
-        // 等待执行完成 - IWaitableExternalEventHandler接口实现
+        // 실행 완료 대기 - IWaitableExternalEventHandler 인터페이스 구현
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)
         {
             _resetEvent.Reset();
@@ -64,7 +64,7 @@ namespace RevitMCPCommandSet.Commands.ExecuteDynamicCode
                 }
                 else
                 {
-                    using (var transaction = new Transaction(doc, "执行AI代码"))
+                    using (var transaction = new Transaction(doc, "AI 코드 실행"))
                     {
                         transaction.Start();
 
@@ -84,7 +84,7 @@ namespace RevitMCPCommandSet.Commands.ExecuteDynamicCode
             catch (Exception ex)
             {
                 ResultInfo.Success = false;
-                ResultInfo.ErrorMessage = $"执行失败: {ex.Message}";
+                ResultInfo.ErrorMessage = $"실행 실패: {ex.Message}";
             }
             finally
             {
@@ -95,7 +95,7 @@ namespace RevitMCPCommandSet.Commands.ExecuteDynamicCode
 
         private object CompileAndExecuteCode(string code, Document doc, object[] parameters)
         {
-            // 包装代码以规范入口点
+            // 진입점을 표준화하기 위해 코드를 감쌈
             var wrappedCode = $@"
 using System;
 using System.Linq;
@@ -109,7 +109,7 @@ namespace AIGeneratedCode
     {{
         public static object Execute(Document document, object[] parameters)
         {{
-            // 用户代码入口
+            // 사용자 코드 진입점
             {code}
         }}
     }}
@@ -117,14 +117,14 @@ namespace AIGeneratedCode
 
             var syntaxTree = CSharpSyntaxTree.ParseText(wrappedCode);
 
-            // 添加必要的程序集引用（引用所有已加载的程序集）
+            // 필요한 어셈블리 참조 추가 (로드된 모든 어셈블리를 참조)
             var references = AppDomain.CurrentDomain.GetAssemblies()
                 .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
                 .Select(a => MetadataReference.CreateFromFile(a.Location))
                 .Cast<MetadataReference>()
                 .ToList();
 
-            // 编译代码
+            // 코드 컴파일
             var compilation = CSharpCompilation.Create(
                 "AIGeneratedCode",
                 syntaxTrees: new[] { syntaxTree },
@@ -136,16 +136,16 @@ namespace AIGeneratedCode
             {
                 var result = compilation.Emit(ms);
 
-                // 处理编译结果
+                // 컴파일 결과 처리
                 if (!result.Success)
                 {
                     var errors = string.Join("\n", result.Diagnostics
                         .Where(d => d.Severity == DiagnosticSeverity.Error)
                         .Select(d => $"Line {d.Location.GetLineSpan().StartLinePosition.Line}: {d.GetMessage()}"));
-                    throw new Exception($"代码编译错误:\n{errors}");
+                    throw new Exception($"코드 컴파일 오류:\n{errors}");
                 }
 
-                // 反射调用执行方法
+                // 리플렉션을 통해 실행 메서드 호출
                 ms.Seek(0, SeekOrigin.Begin);
                 var assembly = Assembly.Load(ms.ToArray());
                 var executorType = assembly.GetType("AIGeneratedCode.CodeExecutor");
@@ -157,11 +157,11 @@ namespace AIGeneratedCode
 
         public string GetName()
         {
-            return "执行AI代码";
+            return "AI 코드 실행";
         }
     }
 
-    // 执行结果数据结构
+    // 실행 결과 데이터 구조
     public class ExecutionResultInfo
     {
         [JsonProperty("success")]

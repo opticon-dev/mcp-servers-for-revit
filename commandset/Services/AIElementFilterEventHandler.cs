@@ -24,20 +24,20 @@ namespace RevitMCPCommandSet.Services
         private Document doc => uiDoc.Document;
         private Autodesk.Revit.ApplicationServices.Application app => uiApp.Application;
         /// <summary>
-        /// 事件等待对象
+        /// 이벤트 대기 객체
         /// </summary>
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
         /// <summary>
-        /// 创建数据（传入数据）
+        /// 생성 데이터 (입력 데이터)
         /// </summary>
         public FilterSetting FilterSetting { get; private set; }
         /// <summary>
-        /// 执行结果（传出数据）
+        /// 실행 결과 (출력 데이터)
         /// </summary>
         public AIResult<List<object>> Result { get; private set; }
 
         /// <summary>
-        /// 设置创建的参数
+        /// 생성 파라미터 설정
         /// </summary>
         public void SetParameters(FilterSetting data)
         {
@@ -51,31 +51,34 @@ namespace RevitMCPCommandSet.Services
             try
             {
                 var elementInfoList = new List<object>();
-                // 检查过滤器设置是否有效
+                // 필터 설정이 유효한지 확인
                 if (!FilterSetting.Validate(out string errorMessage))
                     throw new Exception(errorMessage);
-                // 获取指定条件元素的Id
+                // 지정된 조건에 맞는 엘리먼트의 ID 가져오기
                 var elementList = GetFilteredElements(doc, FilterSetting);
                 if (elementList == null || !elementList.Any())
-                    throw new Exception("未在项目中找到指定元素，请检查过滤器设置是否正确");
-                // 过滤器最大个数限制
+                    // 프로젝트에서 지정된 엘리먼트를 찾을 수 없습니다. 필터 설정이 올바른지 확인하세요.
+                    throw new Exception("프로젝트에서 지정된 엘리먼트를 찾을 수 없음, 필터 설정이 올바른지 확인하세요");
+                // 필터 최대 개수 제한
                 string message = "";
                 if (FilterSetting.MaxElements > 0)
                 {
                     if (elementList.Count > FilterSetting.MaxElements)
                     {
                         elementList = elementList.Take(FilterSetting.MaxElements).ToList();
-                        message = $"。此外，符合过滤条件的共有 {elementList.Count} 个元素，仅显示前 {FilterSetting.MaxElements} 个";
+                        // 또한 필터 조건을 만족하는 엘리먼트는 총 {elementList.Count}개이며, 앞의 {FilterSetting.MaxElements}개만 표시합니다.
+                        message = $". 또한, 필터 조건에 부합하는 엘리먼트는 총 {elementList.Count} 개이며, 앞 {FilterSetting.MaxElements} 개만 표시됨";
                     }
                 }
 
-                // 获取指定Id元素的信息
+                // 지정된 ID의 엘리먼트 정보 가져오기
                 elementInfoList = GetElementFullInfo(doc, elementList);
 
                 Result = new AIResult<List<object>>
                 {
                     Success = true,
-                    Message = $"成功获取{elementInfoList.Count}个元素信息，具体信息储存在Response属性中"+ message,
+                    // {elementInfoList.Count}개의 엘리먼트 정보를 성공적으로 가져왔으며, 상세 정보는 Response 속성에 저장됩니다.
+                    Message = $"{elementInfoList.Count} 개의 엘리먼트 정보를 성공적으로 가져왔으며, 상세 정보는 Response 속성에 저장됨" + message,
                     Response = elementInfoList,
                 };
             }
@@ -84,20 +87,21 @@ namespace RevitMCPCommandSet.Services
                 Result = new AIResult<List<object>>
                 {
                     Success = false,
-                    Message = $"获取元素信息时出错: {ex.Message}",
+                    // 엘리먼트 정보 가져오기 중 오류: {ex.Message}
+                    Message = $"엘리먼트 정보 가져오기 중 오류: {ex.Message}",
                 };
             }
             finally
             {
-                _resetEvent.Set(); // 通知等待线程操作已完成
+                _resetEvent.Set(); // 대기 스레드에게 작업 완료 알림
             }
         }
 
         /// <summary>
-        /// 等待创建完成
+        /// 생성 완료 대기
         /// </summary>
-        /// <param name="timeoutMilliseconds">超时时间（毫秒）</param>
-        /// <returns>操作是否在超时前完成</returns>
+        /// <param name="timeoutMilliseconds">타임아웃 시간 (밀리초)</param>
+        /// <returns>작업이 타임아웃 이전에 완료되었는지 여부</returns>
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)
         {
             _resetEvent.Reset();
@@ -105,117 +109,126 @@ namespace RevitMCPCommandSet.Services
         }
 
         /// <summary>
-        /// IExternalEventHandler.GetName 实现
+        /// IExternalEventHandler.GetName 구현
         /// </summary>
         public string GetName()
         {
-            return "获取元素信息";
+            // 엘리먼트 정보 가져오기
+            return "엘리먼트 정보 가져오기";
         }
 
         /// <summary>
-        /// 根据过滤器设置获取Revit文档中符合条件的元素，支持多条件组合过滤
+        /// 필터 설정에 따라 Revit 문서에서 조건에 맞는 엘리먼트를 가져오며, 다중 조건 조합 필터링을 지원
         /// </summary>
-        /// <param name="doc">Revit文档</param>
-        /// <param name="settings">过滤器设置</param>
-        /// <returns>符合所有过滤条件的元素集合</returns>
+        /// <param name="doc">RevitRevit 문서</param>
+        /// <param name="settings">필터 설정</param>
+        /// <returns>모든 필터 조건을 만족하는 엘리먼트 집합</returns>
         public static IList<Element> GetFilteredElements(Document doc, FilterSetting settings)
         {
             if (doc == null)
                 throw new ArgumentNullException(nameof(doc));
             if (settings == null)
                 throw new ArgumentNullException(nameof(settings));
-            // 验证过滤器设置
+            // 필터 설정 검증
             if (!settings.Validate(out string errorMessage))
             {
-                System.Diagnostics.Trace.WriteLine($"过滤器设置无效: {errorMessage}");
+                // 필터 설정이 유효하지 않음: {errorMessage}
+                System.Diagnostics.Trace.WriteLine($"필터 설정이 유효하지 않음: {errorMessage}");
                 return new List<Element>();
             }
-            // 记录过滤条件应用情况
+            // 적용된 필터 조건 기록
             List<string> appliedFilters = new List<string>();
             List<Element> result = new List<Element>();
-            // 如果同时包含类型和实例，需要分别过滤再合并结果
+            // 타입과 인스턴스를 모두 포함하면 각각 필터링한 뒤 결과를 병합해야 함
             if (settings.IncludeTypes && settings.IncludeInstances)
             {
-                // 收集类型元素
+                // 타입 엘리먼트 수집
                 result.AddRange(GetElementsByKind(doc, settings, true, appliedFilters));
 
-                // 收集实例元素
+                // 인스턴스 엘리먼트 수집
                 result.AddRange(GetElementsByKind(doc, settings, false, appliedFilters));
             }
             else if (settings.IncludeInstances)
             {
-                // 仅收集实例元素
+                // 인스턴스 엘리먼트만 수집
                 result = GetElementsByKind(doc, settings, false, appliedFilters);
             }
             else if (settings.IncludeTypes)
             {
-                // 仅收集类型元素
+                // 타입 엘리먼트만 수집
                 result = GetElementsByKind(doc, settings, true, appliedFilters);
             }
 
-            // 输出应用的过滤器信息
+            // 적용된 필터 정보 출력
             if (appliedFilters.Count > 0)
             {
-                System.Diagnostics.Trace.WriteLine($"已应用 {appliedFilters.Count} 个过滤条件: {string.Join(", ", appliedFilters)}");
-                System.Diagnostics.Trace.WriteLine($"最终筛选结果: 共找到 {result.Count} 个元素");
+                // 적용된 필터 조건 {appliedFilters.Count}개: {string.Join(", ", appliedFilters)}
+                System.Diagnostics.Trace.WriteLine($"적용된 필터 조건 {appliedFilters.Count}개: {string.Join(", ", appliedFilters)}");
+                // 최종 필터링 결과: 총 {result.Count}개의 엘리먼트 발견
+                System.Diagnostics.Trace.WriteLine($"최종 필터링 결과: 총 {result.Count}개의 엘리먼트 발견");
             }
             return result;
 
         }
 
         /// <summary>
-        /// 根据元素种类(类型或实例)获取满足过滤条件的元素
+        /// 엘리먼트 종류(타입 또는 인스턴스)에 따라 필터 조건을 만족하는 엘리먼트를 가져오기
         /// </summary>
         private static List<Element> GetElementsByKind(Document doc, FilterSetting settings, bool isElementType, List<string> appliedFilters)
         {
-            // 创建基础的FilteredElementCollector
+            // 기본 FilteredElementCollector 생성
             FilteredElementCollector collector;
-            // 检查是否需要过滤当前视图可见的元素 (仅适用于实例元素)
+            // 현재 뷰에서 보이는 엘리먼트를 필터링해야 하는지 확인 (인스턴스 엘리먼트에만 적용)
             if (!isElementType && settings.FilterVisibleInCurrentView && doc.ActiveView != null)
             {
                 collector = new FilteredElementCollector(doc, doc.ActiveView.Id);
-                appliedFilters.Add("当前视图可见元素");
+                // 현재 뷰에 보이는 엘리먼트
+                appliedFilters.Add("현재 뷰에 보이는 엘리먼트");
             }
             else
             {
                 collector = new FilteredElementCollector(doc);
             }
-            // 根据元素种类过滤
+            // 엘리먼트 종류에 따라 필터링
             if (isElementType)
             {
                 collector = collector.WhereElementIsElementType();
-                appliedFilters.Add("仅元素类型");
+                // 엘리먼트 타입만
+                appliedFilters.Add("엘리먼트 타입만");
             }
             else
             {
                 collector = collector.WhereElementIsNotElementType();
-                appliedFilters.Add("仅元素实例");
+                // 엘리먼트 인스턴스만
+                appliedFilters.Add("엘리먼트 인스턴스만");
             }
-            // 创建过滤器列表
+            // 필터 목록 생성
             List<ElementFilter> filters = new List<ElementFilter>();
-            // 1. 类别过滤器
+            // 1. 카테고리 필터
             if (!string.IsNullOrWhiteSpace(settings.FilterCategory))
             {
                 BuiltInCategory category;
                 if (!Enum.TryParse(settings.FilterCategory, true, out category))
                 {
-                    throw new ArgumentException($"无法将 '{settings.FilterCategory}' 转换为有效的Revit类别。");
+                    // '{settings.FilterCategory}'을(를) 유효한 Revit 카테고리로 변환할 수 없습니다.
+                    throw new ArgumentException($"'{settings.FilterCategory}'을(를) 유효한 Revit 카테고리로 변환할 수 없습니다.");
                 }
                 ElementCategoryFilter categoryFilter = new ElementCategoryFilter(category);
                 filters.Add(categoryFilter);
-                appliedFilters.Add($"类别：{settings.FilterCategory}");
+                // 카테고리: {settings.FilterCategory}
+                appliedFilters.Add($"카테고리: {settings.FilterCategory}");
             }
-            // 2. 元素类型过滤器
+            // 2. 엘리먼트 타입 필터
             if (!string.IsNullOrWhiteSpace(settings.FilterElementType))
             {
 
                 Type elementType = null;
-                // 尝试解析类型名称的各种可能形式
+                // 타입 이름의 여러 가능한 형식을 해석 시도
                 string[] possibleTypeNames = new string[]
                 {
-                    settings.FilterElementType,                                    // 原始输入
-                    $"Autodesk.Revit.DB.{settings.FilterElementType}, RevitAPI",  // Revit API命名空间
-                    $"{settings.FilterElementType}, RevitAPI"                      // 完整限定带程序集
+                    settings.FilterElementType,                                    // 원본 입력
+                    $"Autodesk.Revit.DB.{settings.FilterElementType}, RevitAPI",  // Revit API 네임스페이스
+                    $"{settings.FilterElementType}, RevitAPI"                      // 어셈블리를 포함한 완전 수식 이름
                 };
                 foreach (string typeName in possibleTypeNames)
                 {
@@ -227,50 +240,58 @@ namespace RevitMCPCommandSet.Services
                 {
                     ElementClassFilter classFilter = new ElementClassFilter(elementType);
                     filters.Add(classFilter);
-                    appliedFilters.Add($"元素类型：{elementType.Name}");
+                    // 엘리먼트 타입: {elementType.Name}
+                    appliedFilters.Add($"엘리먼트 타입: {elementType.Name}");
                 }
                 else
                 {
-                    throw new Exception($"警告：无法找到类型 '{settings.FilterElementType}'");
+                    // 경고: 타입 '{settings.FilterElementType}'을(를) 찾을 수 없음
+                    throw new Exception($"경고: 타입 '{settings.FilterElementType}'을(를) 찾을 수 없음");
                 }
             }
-            // 3. 族符号过滤器 (仅适用于元素实例)
+            // 3. 패밀리 심볼 필터 (엘리먼트 인스턴스에만 적용)
             if (!isElementType && settings.FilterFamilySymbolId > 0)
             {
                 ElementId symbolId = new ElementId(settings.FilterFamilySymbolId);
-                // 检查元素是否存在且是族类型
+                // 엘리먼트가 존재하고 패밀리 타입인지 확인
                 Element symbolElement = doc.GetElement(symbolId);
                 if (symbolElement != null && symbolElement is FamilySymbol)
                 {
                     FamilyInstanceFilter familyFilter = new FamilyInstanceFilter(doc, symbolId);
                     filters.Add(familyFilter);
-                    // 添加更详细的族信息日志
+                    // 더 자세한 패밀리 정보 로그 추가
                     FamilySymbol symbol = symbolElement as FamilySymbol;
-                    string familyName = symbol.Family?.Name ?? "未知族";
-                    string symbolName = symbol.Name ?? "未知类型";
-                    appliedFilters.Add($"族类型：{familyName} - {symbolName} (ID: {settings.FilterFamilySymbolId})");
+                    // 알 수 없는 패밀리
+                    string familyName = symbol.Family?.Name ?? "알 수 없는 패밀리";
+                    // 알 수 없는 타입
+                    string symbolName = symbol.Name ?? "알 수 없는 타입";
+                    // 패밀리 타입: {familyName} - {symbolName} (ID: {settings.FilterFamilySymbolId})
+                    appliedFilters.Add($"패밀리 타입: {familyName} - {symbolName} (ID: {settings.FilterFamilySymbolId})");
                 }
                 else
                 {
-                    string elementType = symbolElement != null ? symbolElement.GetType().Name : "不存在";
-                    System.Diagnostics.Trace.WriteLine($"警告：ID为 {settings.FilterFamilySymbolId} 的元素{(symbolElement == null ? "不存在" : "不是有效的FamilySymbol")} (实际类型: {elementType})");
+                    // 존재하지 않음
+                    string elementType = symbolElement != null ? symbolElement.GetType().Name : "존재하지 않음";
+                    // 경고: ID가 {settings.FilterFamilySymbolId}인 엘리먼트가 존재하지 않거나 유효한 FamilySymbol이 아닙니다. (실제 타입: {elementType})
+                    System.Diagnostics.Trace.WriteLine($"경고: ID가 {settings.FilterFamilySymbolId}인 엘리먼트가 {(symbolElement == null ? "존재하지 않음" : "유효한 FamilySymbol이 아님")} (실제 타입: {elementType})");
                 }
             }
-            // 4. 空间范围过滤器
+            // 4. 공간 범위 필터
             if (settings.BoundingBoxMin != null && settings.BoundingBoxMax != null)
             {
-                // 转换为Revit的XYZ坐标 (毫米转内部单位)
+                // Revit XYZ 좌표로 변환 (밀리미터를 내부 단위로 변환)
                 XYZ minXYZ = JZPoint.ToXYZ(settings.BoundingBoxMin);
                 XYZ maxXYZ = JZPoint.ToXYZ(settings.BoundingBoxMax);
-                // 创建空间范围Outline对象
+                // 공간 범위 Outline 객체 생성
                 Outline outline = new Outline(minXYZ, maxXYZ);
-                // 创建相交过滤器
+                // 교차 필터 생성
                 BoundingBoxIntersectsFilter boundingBoxFilter = new BoundingBoxIntersectsFilter(outline);
                 filters.Add(boundingBoxFilter);
-                appliedFilters.Add($"空间范围过滤：Min({settings.BoundingBoxMin.X:F2}, {settings.BoundingBoxMin.Y:F2}, {settings.BoundingBoxMin.Z:F2}), " +
+                // 공간 범위 필터: Min({settings.BoundingBoxMin.X:F2}, {settings.BoundingBoxMin.Y:F2}, {settings.BoundingBoxMin.Z:F2}), ...
+                appliedFilters.Add($"공간 범위 필터: Min({settings.BoundingBoxMin.X:F2}, {settings.BoundingBoxMin.Y:F2}, {settings.BoundingBoxMin.Z:F2}), " +
                                   $"Max({settings.BoundingBoxMax.X:F2}, {settings.BoundingBoxMax.Y:F2}, {settings.BoundingBoxMax.Z:F2}) mm");
             }
-            // 应用组合过滤器
+            // 조합 필터 적용
             if (filters.Count > 0)
             {
                 ElementFilter combinedFilter = filters.Count == 1
@@ -279,24 +300,25 @@ namespace RevitMCPCommandSet.Services
                 collector = collector.WherePasses(combinedFilter);
                 if (filters.Count > 1)
                 {
-                    System.Diagnostics.Trace.WriteLine($"应用了{filters.Count}个过滤条件的组合过滤器 (逻辑AND关系)");
+                    // 필터 조건 {filters.Count}개를 결합한 필터를 적용함 (논리 AND 관계)
+                    System.Diagnostics.Trace.WriteLine($"필터 조건 {filters.Count}개를 결합한 필터를 적용함 (논리 AND 관계)");
                 }
             }
             return collector.ToElements().ToList();
         }
 
         /// <summary>
-        /// 获取模型元素信息
+        /// 모델 엘리먼트 정보 가져오기
         /// </summary>
         public static List<object> GetElementFullInfo(Document doc, IList<Element> elementCollector)
         {
             List<object> infoList = new List<object>();
 
-            // 获取并处理元素
+            // 엘리먼트를 가져와 처리
             foreach (var element in elementCollector)
             {
-                // 判断是否为实体模型元素
-                // 获取元素实例信息
+                // 실체 모델 엘리먼트인지 판단
+                // 엘리먼트 인스턴스 정보 가져오기
                 if (element?.Category?.HasMaterialQuantities ?? false)
                 {
                     var info = CreateElementFullInfo(doc, element);
@@ -305,7 +327,7 @@ namespace RevitMCPCommandSet.Services
                         infoList.Add(info);
                     }
                 }
-                // 获取元素类型信息
+                // 엘리먼트 타입 정보 가져오기
                 else if (element is ElementType elementType)
                 {
                     var info = CreateTypeFullInfo(doc, elementType);
@@ -314,7 +336,7 @@ namespace RevitMCPCommandSet.Services
                         infoList.Add(info);
                     }
                 }
-                // 3. 空间定位元素 (高频)
+                // 3. 위치 기준 엘리먼트 (고빈도)
                 else if (element is Level || element is Grid)
                 {
                     var info = CreatePositioningElementInfo(doc, element);
@@ -323,8 +345,8 @@ namespace RevitMCPCommandSet.Services
                         infoList.Add(info);
                     }
                 }
-                // 4. 空间元素 (中高频)
-                else if (element is SpatialElement) // Room, Area等
+                // 4. 공간 엘리먼트 (중고빈도)
+                else if (element is SpatialElement) // Room, Area 등
                 {
                     var info = CreateSpatialElementInfo(doc, element);
                     if (info != null)
@@ -332,7 +354,7 @@ namespace RevitMCPCommandSet.Services
                         infoList.Add(info);
                     }
                 }
-                // 5. 视图元素 (高频)
+                // 5. 뷰 엘리먼트 (고빈도)
                 else if (element is View)
                 {
                     var info = CreateViewInfo(doc, element);
@@ -341,7 +363,7 @@ namespace RevitMCPCommandSet.Services
                         infoList.Add(info);
                     }
                 }
-                // 6. 注释元素 (中频)
+                // 6. 주석 엘리먼트 (중빈도)
                 else if (element is TextNote || element is Dimension ||
                          element is IndependentTag || element is AnnotationSymbol ||
                          element is SpotDimension)
@@ -352,7 +374,7 @@ namespace RevitMCPCommandSet.Services
                         infoList.Add(info);
                     }
                 }
-                // 7. 处理组和链接
+                // 7. 그룹 및 링크 처리
                 else if (element is Group || element is RevitLinkInstance)
                 {
                     var info = CreateGroupOrLinkInfo(doc, element);
@@ -361,7 +383,7 @@ namespace RevitMCPCommandSet.Services
                         infoList.Add(info);
                     }
                 }
-                // 8. 获取元素基本信息(兜底处理)
+                // 8. 엘리먼트 기본 정보 가져오기(기본 처리)
                 else
                 {
                     var info = CreateElementBasicInfo(doc, element);
@@ -376,7 +398,7 @@ namespace RevitMCPCommandSet.Services
         }
 
         /// <summary>
-        /// 创建单个元素完整的ElementInfo对象
+        /// 단일 엘리먼트의 전체 ElementInfo 객체 생성
         /// </summary>
         public static ElementInstanceInfo CreateElementFullInfo(Document doc, Element element)
         {
@@ -385,37 +407,37 @@ namespace RevitMCPCommandSet.Services
                 if (element?.Category == null)
                     return null;
 
-                ElementInstanceInfo elementInfo = new ElementInstanceInfo();        //创建存储元素完整信息的自定义类
+                ElementInstanceInfo elementInfo = new ElementInstanceInfo();        // 엘리먼트 전체 정보를 저장하는 사용자 정의 클래스 생성
                 // ID
                 elementInfo.Id = element.Id.GetIntValue();
                 // UniqueId
                 elementInfo.UniqueId = element.UniqueId;
-                // 类型名称
+                // 타입 이름
                 elementInfo.Name = element.Name;
-                // 族名称
+                // 패밀리 이름
                 elementInfo.FamilyName = element?.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString();
-                // 类别
+                // 카테고리
                 elementInfo.Category = element.Category.Name;
-                // 内置类别
+                // 내장 카테고리
                 elementInfo.BuiltInCategory = Enum.GetName(typeof(BuiltInCategory), element.Category.Id.GetIntValue());
-                // 类型Id
+                // 타입 ID
                 elementInfo.TypeId = element.GetTypeId().GetIntValue();
-                //所属房间Id  
+                // 소속 Room ID
                 if (element is FamilyInstance instance)
                     elementInfo.RoomId = instance.Room?.Id.GetIntValue() ?? -1;
-                // 标高
+                // 레벨
                 elementInfo.Level = GetElementLevel(doc, element);
-                // 最大包围盒
+                // 바운딩 박스
                 BoundingBoxInfo boundingBoxInfo = new BoundingBoxInfo();
                 elementInfo.BoundingBox = GetBoundingBoxInfo(element);
-                // 参数
+                // 파라미터
                 //elementInfo.Parameters = GetDimensionParameters(element);
-                ParameterInfo thicknessParam = GetThicknessInfo(element);      //厚度参数
+                ParameterInfo thicknessParam = GetThicknessInfo(element);      // 두께 파라미터
                 if (thicknessParam != null)
                 {
                     elementInfo.Parameters.Add(thicknessParam);
                 }
-                ParameterInfo heightParam = GetBoundingBoxHeight(elementInfo.BoundingBox);      //高度参数
+                ParameterInfo heightParam = GetBoundingBoxHeight(elementInfo.BoundingBox);      // 높이 파라미터
                 if (heightParam != null)
                 {
                     elementInfo.Parameters.Add(heightParam);
@@ -430,7 +452,7 @@ namespace RevitMCPCommandSet.Services
         }
 
         /// <summary>
-        /// 创建单个类型完整的TypeFullInfo对象
+        /// 단일 타입의 전체 TypeFullInfo 객체 생성
         /// </summary>
         /// <param name="doc"></param>
         /// <param name="elementType"></param>
@@ -442,17 +464,17 @@ namespace RevitMCPCommandSet.Services
             typeInfo.Id = elementType.Id.GetIntValue();
             // UniqueId
             typeInfo.UniqueId = elementType.UniqueId;
-            // 类型名称
+            // 타입 이름
             typeInfo.Name = elementType.Name;
-            // 族名称
+            // 패밀리 이름
             typeInfo.FamilyName = elementType.FamilyName;
-            // 类别
+            // 카테고리
             typeInfo.Category = elementType.Category.Name;
-            // 内置类别
+            // 내장 카테고리
             typeInfo.BuiltInCategory = Enum.GetName(typeof(BuiltInCategory), elementType.Category.Id.GetIntValue());
-            // 参数字典
+            // 파라미터 사전
             typeInfo.Parameters = GetDimensionParameters(elementType);
-            ParameterInfo thicknessParam = GetThicknessInfo(elementType);      //厚度参数
+            ParameterInfo thicknessParam = GetThicknessInfo(elementType);      // 두께 파라미터
             if (thicknessParam != null)
             {
                 typeInfo.Parameters.Add(thicknessParam);
@@ -461,7 +483,7 @@ namespace RevitMCPCommandSet.Services
         }
 
         /// <summary>
-        /// 创建空间定位元素的信息
+        /// 위치 기준 엘리먼트 정보 생성
         /// </summary>
         public static PositioningElementInfo CreatePositioningElementInfo(Document doc, Element element)
         {
@@ -482,13 +504,13 @@ namespace RevitMCPCommandSet.Services
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
 
-                // 处理标高
+                // 레벨 처리
                 if (element is Level level)
                 {
-                    // 转换为mm
+                    // mm로 변환
                     info.Elevation = level.Elevation * 304.8;
                 }
-                // 处理轴网
+                // 축망 처리
                 else if (element is Grid grid)
                 {
                     Curve curve = grid.Curve;
@@ -496,26 +518,27 @@ namespace RevitMCPCommandSet.Services
                     {
                         XYZ start = curve.GetEndPoint(0);
                         XYZ end = curve.GetEndPoint(1);
-                        // 创建JZLine（转换为mm）
+                        // JZLine 생성(mm로 변환)
                         info.GridLine = new JZLine(
                             start.X * 304.8, start.Y * 304.8, start.Z * 304.8,
                             end.X * 304.8, end.Y * 304.8, end.Z * 304.8);
                     }
                 }
 
-                // 获取标高信息
+                // 레벨 정보 가져오기
                 info.Level = GetElementLevel(doc, element);
 
                 return info;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.WriteLine($"创建空间定位元素信息时出错: {ex.Message}");
+                // 위치 기준 엘리먼트 정보 생성 중 오류: {ex.Message}
+                System.Diagnostics.Trace.WriteLine($"위치 기준 엘리먼트 정보 생성 중 오류: {ex.Message}");
                 return null;
             }
         }
         /// <summary>
-        /// 创建空间元素的信息
+        /// 공간 엘리먼트 정보 생성
         /// </summary>
         public static SpatialElementInfo CreateSpatialElementInfo(Document doc, Element element)
         {
@@ -537,11 +560,11 @@ namespace RevitMCPCommandSet.Services
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
 
-                // 获取房间或区域的编号
+                // Room 또는 Area 번호 가져오기
                 if (element is Room room)
                 {
                     info.Number = room.Number;
-                    // 转换为mm³
+                    // mm³로 변환
                     info.Volume = room.Volume * Math.Pow(304.8, 3);
                 }
                 else if (element is Area area)
@@ -549,35 +572,36 @@ namespace RevitMCPCommandSet.Services
                     info.Number = area.Number;
                 }
 
-                // 获取面积
+                // 면적 가져오기
                 Parameter areaParam = element.get_Parameter(BuiltInParameter.ROOM_AREA);
                 if (areaParam != null && areaParam.HasValue)
                 {
-                    // 转换为mm²
+                    // mm²로 변환
                     info.Area = areaParam.AsDouble() * Math.Pow(304.8, 2);
                 }
 
-                // 获取周长
+                // 둘레 가져오기
                 Parameter perimeterParam = element.get_Parameter(BuiltInParameter.ROOM_PERIMETER);
                 if (perimeterParam != null && perimeterParam.HasValue)
                 {
-                    // 转换为mm
+                    // mm로 변환
                     info.Perimeter = perimeterParam.AsDouble() * 304.8;
                 }
 
-                // 获取标高
+                // 레벨 가져오기
                 info.Level = GetElementLevel(doc, element);
 
                 return info;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.WriteLine($"创建空间元素信息时出错: {ex.Message}");
+                // 공간 엘리먼트 정보 생성 중 오류: {ex.Message}
+                System.Diagnostics.Trace.WriteLine($"공간 엘리먼트 정보 생성 중 오류: {ex.Message}");
                 return null;
             }
         }
         /// <summary>
-        /// 创建视图元素的信息
+        /// 뷰 엘리먼트 정보 생성
         /// </summary>
         public static ViewInfo CreateViewInfo(Document doc, Element element)
         {
@@ -604,7 +628,7 @@ namespace RevitMCPCommandSet.Services
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
 
-                // 获取与视图关联的标高
+                // 뷰와 연관된 레벨 가져오기
                 if (view is ViewPlan viewPlan && viewPlan.GenLevel != null)
                 {
                     Level level = viewPlan.GenLevel;
@@ -612,24 +636,24 @@ namespace RevitMCPCommandSet.Services
                     {
                         Id = level.Id.GetIntValue(),
                         Name = level.Name,
-                        Height = level.Elevation * 304.8 // 转换为mm
+                        Height = level.Elevation * 304.8 // mm로 변환
                     };
                 }
 
-                // 判断视图是否打开和激活
+                // 뷰가 열려 있고 활성 상태인지 판단
                 UIDocument uidoc = new UIDocument(doc);
 
-                // 获取所有打开的视图
+                // 열려 있는 모든 뷰 가져오기
                 IList<UIView> openViews = uidoc.GetOpenUIViews();
 
                 foreach (UIView uiView in openViews)
                 {
-                    // 检查视图是否打开
+                    // 뷰가 열려 있는지 확인
                     if (uiView.ViewId.GetValue() == view.Id.GetValue())
                     {
                         info.IsOpen = true;
 
-                        // 检查视图是否是当前激活的视图
+                        // 뷰가 현재 활성 뷰인지 확인
                         if (uidoc.ActiveView.Id.GetValue() == view.Id.GetValue())
                         {
                             info.IsActive = true;
@@ -642,12 +666,13 @@ namespace RevitMCPCommandSet.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.WriteLine($"创建视图元素信息时出错: {ex.Message}");
+                // 뷰 엘리먼트 정보 생성 중 오류: {ex.Message}
+                System.Diagnostics.Trace.WriteLine($"뷰 엘리먼트 정보 생성 중 오류: {ex.Message}");
                 return null;
             }
         }
         /// <summary>
-        /// 创建注释元素的信息
+        /// 주석 엘리먼트 정보 생성
         /// </summary>
         public static AnnotationInfo CreateAnnotationInfo(Document doc, Element element)
         {
@@ -668,7 +693,7 @@ namespace RevitMCPCommandSet.Services
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
 
-                // 获取所在视图
+                // 소속 뷰 가져오기
                 Parameter viewParam = element.get_Parameter(BuiltInParameter.VIEW_NAME);
                 if (viewParam != null && viewParam.HasValue)
                 {
@@ -680,35 +705,35 @@ namespace RevitMCPCommandSet.Services
                     info.OwnerView = ownerView?.Name;
                 }
 
-                // 处理文字标注
+                // 텍스트 주석 처리
                 if (element is TextNote textNote)
                 {
                     info.TextContent = textNote.Text;
                     XYZ position = textNote.Coord;
-                    // 转换为mm
+                    // mm로 변환
                     info.Position = new JZPoint(
                         position.X * 304.8,
                         position.Y * 304.8,
                         position.Z * 304.8);
                 }
-                // 处理尺寸标注
+                // 치수 주석 처리
                 else if (element is Dimension dimension)
                 {
                     info.DimensionValue = dimension.Value.ToString();
                     XYZ origin = dimension.Origin;
-                    // 转换为mm
+                    // mm로 변환
                     info.Position = new JZPoint(
                         origin.X * 304.8,
                         origin.Y * 304.8,
                         origin.Z * 304.8);
                 }
-                // 处理其他注释元素
+                // 기타 주석 엘리먼트 처리
                 else if (element is AnnotationSymbol annotationSymbol)
                 {
                     if (annotationSymbol.Location is LocationPoint locationPoint)
                     {
                         XYZ position = locationPoint.Point;
-                        // 转换为mm
+                        // mm로 변환
                         info.Position = new JZPoint(
                             position.X * 304.8,
                             position.Y * 304.8,
@@ -719,12 +744,13 @@ namespace RevitMCPCommandSet.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.WriteLine($"创建注释元素信息时出错: {ex.Message}");
+                // 주석 엘리먼트 정보 생성 중 오류: {ex.Message}
+                System.Diagnostics.Trace.WriteLine($"주석 엘리먼트 정보 생성 중 오류: {ex.Message}");
                 return null;
             }
         }
         /// <summary>
-        /// 创建组或链接的信息
+        /// 그룹 또는 링크 정보 생성
         /// </summary>
         public static GroupOrLinkInfo CreateGroupOrLinkInfo(Document doc, Element element)
         {
@@ -745,25 +771,25 @@ namespace RevitMCPCommandSet.Services
                     BoundingBox = GetBoundingBoxInfo(element)
                 };
 
-                // 处理组
+                // 그룹 처리
                 if (element is Group group)
                 {
                     ICollection<ElementId> memberIds = group.GetMemberIds();
                     info.MemberCount = memberIds?.Count;
                     info.GroupType = group.GroupType?.Name;
                 }
-                // 处理链接
+                // 링크 처리
                 else if (element is RevitLinkInstance linkInstance)
                 {
                     RevitLinkType linkType = doc.GetElement(linkInstance.GetTypeId()) as RevitLinkType;
                     if (linkType != null)
                     {
                         ExternalFileReference extFileRef = linkType.GetExternalFileReference();
-                        // 获取绝对路径
+                        // 절대 경로 가져오기
                         string absPath = ModelPathUtils.ConvertModelPathToUserVisiblePath(extFileRef.GetAbsolutePath());
                         info.LinkPath = absPath;
 
-                        // 使用GetLinkedFileStatus获取链接状态
+                        // GetLinkedFileStatus로 링크 상태 가져오기
                         LinkedFileStatus linkStatus = linkType.GetLinkedFileStatus();
                         info.LinkStatus = linkStatus.ToString();
                     }
@@ -772,12 +798,12 @@ namespace RevitMCPCommandSet.Services
                         info.LinkStatus = LinkedFileStatus.Invalid.ToString();
                     }
 
-                    // 获取位置
+                    // 위치 가져오기
                     LocationPoint location = linkInstance.Location as LocationPoint;
                     if (location != null)
                     {
                         XYZ point = location.Point;
-                        // 转换为mm
+                        // mm로 변환
                         info.Position = new JZPoint(
                             point.X * 304.8,
                             point.Y * 304.8,
@@ -789,13 +815,14 @@ namespace RevitMCPCommandSet.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.WriteLine($"创建组和链接信息时出错: {ex.Message}");
+                // 그룹 및 링크 정보 생성 중 오류: {ex.Message}
+                System.Diagnostics.Trace.WriteLine($"그룹 및 링크 정보 생성 중 오류: {ex.Message}");
                 return null;
             }
         }
 
         /// <summary>
-        /// 创建元素的增强基础信息
+        /// 엘리먼트의 확장 기본 정보 생성
         /// </summary>
         public static ElementBasicInfo CreateElementBasicInfo(Document doc, Element element)
         {
@@ -818,16 +845,17 @@ namespace RevitMCPCommandSet.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.WriteLine($"创建元素基础信息时出错: {ex.Message}");
+                // 엘리먼트 기본 정보 생성 중 오류: {ex.Message}
+                System.Diagnostics.Trace.WriteLine($"엘리먼트 기본 정보 생성 중 오류: {ex.Message}");
                 return null;
             }
         }
 
         /// <summary>
-        /// 获取系统族构件的厚度参数信息
+        /// 시스템 패밀리 구성요소의 두께 파라미터 정보 가져오기
         /// </summary>
-        /// <param name="element">系统族构件（墙、楼板、门等）</param>
-        /// <returns>参数信息对象，无效返回null</returns>
+        /// <param name="element">시스템 패밀리 구성요소(벽, 바닥, 문 등)</param>
+        /// <returns>파라미터 정보 객체이며, 유효하지 않으면 null을 반환</returns>
         public static ParameterInfo GetThicknessInfo(Element element)
         {
             if (element == null)
@@ -835,14 +863,14 @@ namespace RevitMCPCommandSet.Services
                 return null;
             }
 
-            // 获取构件类型
+            // 구성요소 타입 가져오기
             ElementType elementType = element.Document.GetElement(element.GetTypeId()) as ElementType;
             if (elementType == null)
             {
                 return null;
             }
 
-            // 根据不同构件类型获取对应的内置厚度参数
+            // 구성요소 타입에 따라 해당 내장 두께 파라미터 가져오기
             Parameter thicknessParam = null;
 
             if (elementType is WallType)
@@ -872,7 +900,8 @@ namespace RevitMCPCommandSet.Services
             {
                 return new ParameterInfo
                 {
-                    Name = "厚度",
+                    // Name = "두께",
+                    Name = "두께",
                     Value = $"{thicknessParam.AsDouble() * 304.8}"
                 };
             }
@@ -880,7 +909,7 @@ namespace RevitMCPCommandSet.Services
         }
 
         /// <summary>
-        /// 获取元素所属的标高信息
+        /// 엘리먼트의 소속 레벨 정보 가져오기
         /// </summary>
         public static LevelInfo GetElementLevel(Document doc, Element element)
         {
@@ -888,12 +917,12 @@ namespace RevitMCPCommandSet.Services
             {
                 Level level = null;
 
-                // 处理不同类型元素的标高获取
-                if (element is Wall wall) // 墙体
+                // 서로 다른 타입의 엘리먼트에 대한 레벨 가져오기 처리
+                if (element is Wall wall) // 벽
                 {
                     level = doc.GetElement(wall.LevelId) as Level;
                 }
-                else if (element is Floor floor) // 楼板
+                else if (element is Floor floor) // 바닥
                 {
                     Parameter levelParam = floor.get_Parameter(BuiltInParameter.LEVEL_PARAM);
                     if (levelParam != null && levelParam.HasValue)
@@ -901,15 +930,15 @@ namespace RevitMCPCommandSet.Services
                         level = doc.GetElement(levelParam.AsElementId()) as Level;
                     }
                 }
-                else if (element is FamilyInstance familyInstance) // 族实例（包括常规模型等）
+                else if (element is FamilyInstance familyInstance) // 패밀리 인스턴스(일반 모델 등 포함)
                 {
-                    // 尝试获取族实例的标高参数
+                    // 패밀리 인스턴스의 레벨 파라미터 가져오기 시도
                     Parameter levelParam = familyInstance.get_Parameter(BuiltInParameter.FAMILY_LEVEL_PARAM);
                     if (levelParam != null && levelParam.HasValue)
                     {
                         level = doc.GetElement(levelParam.AsElementId()) as Level;
                     }
-                    // 如果上面的方法获取不到，尝试使用SCHEDULE_LEVEL_PARAM
+                    // 위 방법으로 가져올 수 없으면 SCHEDULE_LEVEL_PARAM 사용 시도
                     if (level == null)
                     {
                         levelParam = familyInstance.get_Parameter(BuiltInParameter.SCHEDULE_LEVEL_PARAM);
@@ -919,9 +948,9 @@ namespace RevitMCPCommandSet.Services
                         }
                     }
                 }
-                else // 其他元素
+                else // 기타 엘리먼트
                 {
-                    // 尝试获取通用的标高参数
+                    // 공통 레벨 파라미터 가져오기 시도
                     Parameter levelParam = element.get_Parameter(BuiltInParameter.INSTANCE_REFERENCE_LEVEL_PARAM);
                     if (levelParam != null && levelParam.HasValue)
                     {
@@ -951,7 +980,7 @@ namespace RevitMCPCommandSet.Services
         }
 
         /// <summary>
-        /// 获取元素的包围盒信息
+        /// 엘리먼트의 바운딩 박스 정보 가져오기
         /// </summary>
         public static BoundingBoxInfo GetBoundingBoxInfo(Element element)
         {
@@ -979,26 +1008,27 @@ namespace RevitMCPCommandSet.Services
         }
 
         /// <summary>
-        /// 获取包围盒的高度参数信息
+        /// 바운딩 박스의 높이 파라미터 정보 가져오기
         /// </summary>
-        /// <param name="boundingBoxInfo">包围盒信息</param>
-        /// <returns>参数信息对象，无效返回null</returns>
+        /// <param name="boundingBoxInfo">바운딩 박스 정보</param>
+        /// <returns>파라미터 정보 객체이며, 유효하지 않으면 null을 반환</returns>
         public static ParameterInfo GetBoundingBoxHeight(BoundingBoxInfo boundingBoxInfo)
         {
             try
             {
-                // 参数检查
+                // 파라미터 확인
                 if (boundingBoxInfo?.Min == null || boundingBoxInfo?.Max == null)
                 {
                     return null;
                 }
 
-                // Z轴方向的差值即为高度
+                // Z축 방향의 차이가 곧 높이임
                 double height = Math.Abs(boundingBoxInfo.Max.Z - boundingBoxInfo.Min.Z);
 
                 return new ParameterInfo
                 {
-                    Name = "高度",
+                    // Name = "높이",
+                    Name = "높이",
                     Value = $"{height}"
                 };
             }
@@ -1009,13 +1039,13 @@ namespace RevitMCPCommandSet.Services
         }
 
         /// <summary>
-        /// 获取元素中所有非空参数的名称和值
+        /// 엘리먼트의 모든 비어 있지 않은 파라미터 이름과 값 가져오기
         /// </summary>
-        /// <param name="element">Revit元素</param>
-        /// <returns>参数信息列表</returns>
+        /// <param name="element">RevitRevit 엘리먼트</param>
+        /// <returns>파라미터 정보 목록</returns>
         public static List<ParameterInfo> GetDimensionParameters(Element element)
         {
-            // 检查元素是否为空
+            // 엘리먼트가 null인지 확인
             if (element == null)
             {
                 return new List<ParameterInfo>();
@@ -1023,24 +1053,24 @@ namespace RevitMCPCommandSet.Services
 
             var parameters = new List<ParameterInfo>();
 
-            // 获取元素的所有参数
+            // 엘리먼트의 모든 파라미터 가져오기
             foreach (Parameter param in element.Parameters)
             {
                 try
                 {
-                    // 跳过无效参数
+                    // 유효하지 않은 파라미터 건너뛰기
                     if (!param.HasValue || param.IsReadOnly)
                     {
                         continue;
                     }
 
-                    // 如果当前参数是尺寸相关参数
+                    // 현재 파라미터가 치수 관련 파라미터이면
                     if (IsDimensionParameter(param))
                     {
-                        // 获取参数值的字符串表示
+                        // 파라미터 값의 문자열 표현 가져오기
                         string value = param.AsValueString();
 
-                        // 如果值非空，则添加到列表中
+                        // 값이 비어 있지 않으면 목록에 추가
                         if (!string.IsNullOrWhiteSpace(value))
                         {
                             parameters.Add(new ParameterInfo
@@ -1053,40 +1083,40 @@ namespace RevitMCPCommandSet.Services
                 }
                 catch
                 {
-                    // 如果获取某个参数值出错，继续处理下一个
+                    // 특정 파라미터 값 가져오기 중 오류가 나면 다음 항목 계속 처리
                     continue;
                 }
             }
 
-            // 按参数名称排序后返回
+            // 파라미터 이름순으로 정렬 후 반환
             return parameters.OrderBy(p => p.Name).ToList();
         }
 
         /// <summary>
-        /// 判断参数是否为可写入的尺寸参数
+        /// 파라미터가 기록 가능한 치수 파라미터인지 판단
         /// </summary>
         public static bool IsDimensionParameter(Parameter param)
         {
 
 #if REVIT2023_OR_GREATER
-            // 在Revit 2023中使用Definition的GetDataType()方法获取参数类型
+            // Revit 2023에서는 Definition의 GetDataType() 메서드로 파라미터 타입을 가져옴
             ForgeTypeId paramTypeId = param.Definition.GetDataType();
 
-            // 判断参数是否为尺寸相关的类型
+            // 파라미터가 치수 관련 타입인지 판단
             bool isDimensionType = paramTypeId.Equals(SpecTypeId.Length) ||
                                    paramTypeId.Equals(SpecTypeId.Angle) ||
                                    paramTypeId.Equals(SpecTypeId.Area) ||
                                    paramTypeId.Equals(SpecTypeId.Volume);
-            // 只存储尺寸类型参数
+            // 치수 타입 파라미터만 저장
             return isDimensionType;
 #else
-            // 判断参数是否为尺寸相关的类型
+            // 파라미터가 치수 관련 타입인지 판단
             bool isDimensionType = param.Definition.ParameterType == ParameterType.Length ||
                                    param.Definition.ParameterType == ParameterType.Angle ||
                                    param.Definition.ParameterType == ParameterType.Area ||
                                    param.Definition.ParameterType == ParameterType.Volume;
 
-            // 只存储尺寸类型参数
+            // 치수 타입 파라미터만 저장
             return isDimensionType;
 #endif
         }
@@ -1094,7 +1124,7 @@ namespace RevitMCPCommandSet.Services
     }
 
     /// <summary>
-    /// 存储元素完整信息的自定义类
+    /// 엘리먼트 전체 정보를 저장하는 사용자 정의 클래스
     /// </summary>
     public class ElementInstanceInfo
     {
@@ -1107,46 +1137,46 @@ namespace RevitMCPCommandSet.Services
         /// </summary>
         public string UniqueId { get; set; }
         /// <summary>
-        /// 类型Id
+        /// 타입 ID
         /// </summary>
         public int TypeId { get; set; }
         /// <summary>
-        /// 名称
+        /// 이름
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// 族名称
+        /// 패밀리 이름
         /// </summary>
         public string FamilyName { get; set; }
         /// <summary>
-        /// 类别
+        /// 카테고리
         /// </summary>
         public string Category { get; set; }
         /// <summary>
-        /// 内置类别
+        /// 내장 카테고리
         /// </summary>
         public string BuiltInCategory { get; set; }
         /// <summary>
-        /// 所属房间Id
+        /// 소속 Room ID
         /// </summary>
         public int RoomId { get; set; }
         /// <summary>
-        /// 所属标高名称
+        /// 소속 레벨
         /// </summary>
         public LevelInfo Level { get; set; }
         /// <summary>
-        /// 位置信息
+        /// 위치 정보
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
         /// <summary>
-        /// 实例参数
+        /// 인스턴스 파라미터
         /// </summary>
         public List<ParameterInfo> Parameters { get; set; } = new List<ParameterInfo>();
 
     }
 
     /// <summary>
-    /// 存储元素类型完整信息的自定义类
+    /// 엘리먼트 타입 전체 정보를 저장하는 사용자 정의 클래스
     /// </summary>
     public class ElementTypeInfo
     {
@@ -1159,357 +1189,357 @@ namespace RevitMCPCommandSet.Services
         /// </summary>
         public string UniqueId { get; set; }
         /// <summary>
-        /// 名称
+        /// 이름
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// 族名称
+        /// 패밀리 이름
         /// </summary>
         public string FamilyName { get; set; }
         /// <summary>
-        /// 类别名称
+        /// 카테고리 이름
         /// </summary>
         public string Category { get; set; }
         /// <summary>
-        /// 内置类别ID
+        /// 내장 카테고리 ID
         /// </summary>
         public string BuiltInCategory { get; set; }
         /// <summary>
-        /// 类型参数
+        /// 타입 파라미터
         /// </summary>
         public List<ParameterInfo> Parameters { get; set; } = new List<ParameterInfo>();
 
     }
 
     /// <summary>
-    /// 空间定位元素(标高、轴网等)基础信息的类
+    /// 공간 위치 기준 엘리먼트(레벨, 축망 등) 기본 정보 클래스
     /// </summary>
     public class PositioningElementInfo
     {
         /// <summary>
-        /// 元素ID
+        /// 엘리먼트 ID
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// 元素唯一ID
+        /// 엘리먼트 고유 ID
         /// </summary>
         public string UniqueId { get; set; }
         /// <summary>
-        /// 名称
+        /// 이름
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// 族名称
+        /// 패밀리 이름
         /// </summary>
         public string FamilyName { get; set; }
         /// <summary>
-        /// 类别名称
+        /// 카테고리 이름
         /// </summary>
         public string Category { get; set; }
         /// <summary>
-        /// 内置类别(可选)
+        /// 내장 카테고리(선택 사항)
         /// </summary>
         public string BuiltInCategory { get; set; }
         /// <summary>
-        /// 元素的.NET类名称
+        /// 엘리먼트의 .NET 클래스 이름
         /// </summary>
         public string ElementClass { get; set; }
         /// <summary>
-        /// 高程值 (适用于标高，单位mm)
+        /// 고도 값 (레벨에 적용, 단위 mm)
         /// </summary>
         public double? Elevation { get; set; }
         /// <summary>
-        /// 所属标高
+        /// 소속 레벨
         /// </summary>
         public LevelInfo Level { get; set; }
         /// <summary>
-        /// 位置信息
+        /// 위치 정보
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
         /// <summary>
-        /// 轴网线(适用于轴网)
+        /// 축망 선(축망에 적용)
         /// </summary>
         public JZLine GridLine { get; set; }
     }
     /// <summary>
-    /// 存储空间元素(房间、区域等)基础信息的类
+    /// 공간 엘리먼트(Room, Area 등) 기본 정보 클래스
     /// </summary>
     public class SpatialElementInfo
     {
         /// <summary>
-        /// 元素ID
+        /// 엘리먼트 ID
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// 元素唯一ID
+        /// 엘리먼트 고유 ID
         /// </summary>
         public string UniqueId { get; set; }
         /// <summary>
-        /// 名称
+        /// 이름
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// 族名称
+        /// 패밀리 이름
         /// </summary>
         public string FamilyName { get; set; }
         /// <summary>
-        /// 编号
+        /// 번호
         /// </summary>
         public string Number { get; set; }
         /// <summary>
-        /// 类别名称
+        /// 카테고리 이름
         /// </summary>
         public string Category { get; set; }
         /// <summary>
-        /// 内置类别(可选)
+        /// 내장 카테고리(선택 사항)
         /// </summary>
         public string BuiltInCategory { get; set; }
         /// <summary>
-        /// 元素的.NET类名称
+        /// 엘리먼트의 .NET 클래스 이름
         /// </summary>
         public string ElementClass { get; set; }
         /// <summary>
-        /// 面积(单位mm²)
+        /// 면적(단위 mm²)
         /// </summary>
         public double? Area { get; set; }
         /// <summary>
-        /// 体积(单位mm³)
+        /// 체적(단위 mm³)
         /// </summary>
         public double? Volume { get; set; }
         /// <summary>
-        /// 周长(单位mm)
+        /// 둘레(단위 mm)
         /// </summary>
         public double? Perimeter { get; set; }
         /// <summary>
-        /// 所在标高
+        /// 위치한 레벨
         /// </summary>
         public LevelInfo Level { get; set; }
 
         /// <summary>
-        /// 位置信息
+        /// 위치 정보
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
     }
     /// <summary>
-    /// 存储视图元素基础信息的类
+    /// 뷰 엘리먼트 기본 정보 클래스
     /// </summary>
     public class ViewInfo
     {
         /// <summary>
-        /// 元素ID
+        /// 엘리먼트 ID
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// 元素唯一ID
+        /// 엘리먼트 고유 ID
         /// </summary>
         public string UniqueId { get; set; }
         /// <summary>
-        /// 名称
+        /// 이름
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// 族名称
+        /// 패밀리 이름
         /// </summary>
         public string FamilyName { get; set; }
         /// <summary>
-        /// 类别名称
+        /// 카테고리 이름
         /// </summary>
         public string Category { get; set; }
         /// <summary>
-        /// 内置类别(可选)
+        /// 내장 카테고리(선택 사항)
         /// </summary>
         public string BuiltInCategory { get; set; }
         /// <summary>
-        /// 元素的.NET类名称
+        /// 엘리먼트의 .NET 클래스 이름
         /// </summary>
         public string ElementClass { get; set; }
 
         /// <summary>
-        /// 视图类型
+        /// 뷰 타입
         /// </summary>
         public string ViewType { get; set; }
 
         /// <summary>
-        /// 视图比例
+        /// 뷰 축척
         /// </summary>
         public int? Scale { get; set; }
 
         /// <summary>
-        /// 是否为模板视图
+        /// 템플릿 뷰 여부
         /// </summary>
         public bool IsTemplate { get; set; }
 
         /// <summary>
-        /// 详图级别
+        /// 상세 수준
         /// </summary>
         public string DetailLevel { get; set; }
 
         /// <summary>
-        /// 关联的标高
+        /// 연관된 레벨
         /// </summary>
         public LevelInfo AssociatedLevel { get; set; }
 
         /// <summary>
-        /// 位置信息
+        /// 위치 정보
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
 
         /// <summary>
-        /// 视图是否已打开
+        /// 뷰가 열려 있는지 여부
         /// </summary>
         public bool IsOpen { get; set; }
 
         /// <summary>
-        /// 是否是当前激活的视图
+        /// 현재 활성 뷰인지 여부
         /// </summary>
         public bool IsActive { get; set; }
     }
     /// <summary>
-    /// 存储注释元素基础信息的类
+    /// 주석 엘리먼트 기본 정보 클래스
     /// </summary>
     public class AnnotationInfo
     {
         /// <summary>
-        /// 元素ID
+        /// 엘리먼트 ID
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// 元素唯一ID
+        /// 엘리먼트 고유 ID
         /// </summary>
         public string UniqueId { get; set; }
         /// <summary>
-        /// 名称
+        /// 이름
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// 族名称
+        /// 패밀리 이름
         /// </summary>
         public string FamilyName { get; set; }
         /// <summary>
-        /// 类别名称
+        /// 카테고리 이름
         /// </summary>
         public string Category { get; set; }
         /// <summary>
-        /// 内置类别(可选)
+        /// 내장 카테고리(선택 사항)
         /// </summary>
         public string BuiltInCategory { get; set; }
         /// <summary>
-        /// 元素的.NET类名称
+        /// 엘리먼트의 .NET 클래스 이름
         /// </summary>
         public string ElementClass { get; set; }
         /// <summary>
-        /// 所在视图
+        /// 소속 뷰
         /// </summary>
         public string OwnerView { get; set; }
         /// <summary>
-        /// 文本内容 (适用于文字标注)
+        /// 텍스트 내용 (텍스트 주석에 적용)
         /// </summary>
         public string TextContent { get; set; }
         /// <summary>
-        /// 位置信息(单位mm)
+        /// 위치 정보(단위 mm)
         /// </summary>
         public JZPoint Position { get; set; }
 
         /// <summary>
-        /// 位置信息
+        /// 위치 정보
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
         /// <summary>
-        /// 尺寸值 (适用于尺寸标注)
+        /// 치수 값 (치수 주석에 적용)
         /// </summary>
         public string DimensionValue { get; set; }
     }
     /// <summary>
-    /// 存储组和链接基础信息的类
+    /// 그룹 및 링크 기본 정보 클래스
     /// </summary>
     public class GroupOrLinkInfo
     {
         /// <summary>
-        /// 元素ID
+        /// 엘리먼트 ID
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// 元素唯一ID
+        /// 엘리먼트 고유 ID
         /// </summary>
         public string UniqueId { get; set; }
         /// <summary>
-        /// 名称
+        /// 이름
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// 族名称
+        /// 패밀리 이름
         /// </summary>
         public string FamilyName { get; set; }
         /// <summary>
-        /// 类别名称
+        /// 카테고리 이름
         /// </summary>
         public string Category { get; set; }
         /// <summary>
-        /// 内置类别(可选)
+        /// 내장 카테고리(선택 사항)
         /// </summary>
         public string BuiltInCategory { get; set; }
         /// <summary>
-        /// 元素的.NET类名称
+        /// 엘리먼트의 .NET 클래스 이름
         /// </summary>
         public string ElementClass { get; set; }
         /// <summary>
-        /// 组成员数量
+        /// 구성원 수
         /// </summary>
         public int? MemberCount { get; set; }
         /// <summary>
-        /// 组类型
+        /// 그룹 타입
         /// </summary>
         public string GroupType { get; set; }
         /// <summary>
-        /// 链接状态
+        /// 링크 상태
         /// </summary>
         public string LinkStatus { get; set; }
         /// <summary>
-        /// 链接路径
+        /// 링크 경로
         /// </summary>
         public string LinkPath { get; set; }
         /// <summary>
-        /// 位置信息(单位mm)
+        /// 위치 정보(단위 mm)
         /// </summary>
         public JZPoint Position { get; set; }
 
         /// <summary>
-        /// 位置信息
+        /// 위치 정보
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
     }
     /// <summary>
-    /// 存储元素基础信息的增强类
+    /// 엘리먼트 기본 정보 확장 클래스
     /// </summary>
     public class ElementBasicInfo
     {
         /// <summary>
-        /// 元素ID
+        /// 엘리먼트 ID
         /// </summary>
         public int Id { get; set; }
         /// <summary>
-        /// 元素唯一ID
+        /// 엘리먼트 고유 ID
         /// </summary>
         public string UniqueId { get; set; }
         /// <summary>
-        /// 名称
+        /// 이름
         /// </summary>
         public string Name { get; set; }
         /// <summary>
-        /// 族名称
+        /// 패밀리 이름
         /// </summary>
         public string FamilyName { get; set; }
         /// <summary>
-        /// 类别名称
+        /// 카테고리 이름
         /// </summary>
         public string Category { get; set; }
         /// <summary>
-        /// 内置类别(可选)
+        /// 내장 카테고리(선택 사항)
         /// </summary>
         public string BuiltInCategory { get; set; }
 
         /// <summary>
-        /// 位置信息
+        /// 위치 정보
         /// </summary>
         public BoundingBoxInfo BoundingBox { get; set; }
     }
@@ -1517,7 +1547,7 @@ namespace RevitMCPCommandSet.Services
 
 
     /// <summary>
-    /// 存储参数信息完整的自定义类
+    /// 파라미터 전체 정보를 저장하는 사용자 정의 클래스
     /// </summary>
     public class ParameterInfo
     {
@@ -1526,7 +1556,7 @@ namespace RevitMCPCommandSet.Services
     }
 
     /// <summary>
-    /// 存储包围盒信息的自定义类
+    /// 바운딩 박스 정보를 저장하는 사용자 정의 클래스
     /// </summary>
     public class BoundingBoxInfo
     {
@@ -1535,7 +1565,7 @@ namespace RevitMCPCommandSet.Services
     }
 
     /// <summary>
-    /// 存储标高信息的自定义类
+    /// 레벨 정보를 저장하는 사용자 정의 클래스
     /// </summary>
     public class LevelInfo
     {

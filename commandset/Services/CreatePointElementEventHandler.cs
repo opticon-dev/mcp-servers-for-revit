@@ -13,21 +13,21 @@ namespace RevitMCPCommandSet.Services
         private Autodesk.Revit.ApplicationServices.Application app => uiApp.Application;
 
         /// <summary>
-        /// 事件等待对象
+        /// 이벤트 대기 객체
         /// </summary>
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
         /// <summary>
-        /// 创建数据（传入数据）
+        /// 생성 데이터 (입력 데이터)
         /// </summary>
         public List<PointElement> CreatedInfo { get; private set; }
         /// <summary>
-        /// 执行结果（传出数据）
+        /// 실행 결과 (출력 데이터)
         /// </summary>
         public AIResult<List<int>> Result { get; private set; }
         private List<string> _warnings = new List<string>();
 
         /// <summary>
-        /// 设置创建的参数
+        /// 생성 파라미터 설정
         /// </summary>
         public void SetParameters(List<PointElement> data)
         {
@@ -46,11 +46,11 @@ namespace RevitMCPCommandSet.Services
                 {
                     int requestedTypeId = data.TypeId;
 
-                    // Step0 获取构件类型
+                    // Step0 구성요소 타입 가져오기
                     BuiltInCategory builtInCategory = BuiltInCategory.INVALID;
                     Enum.TryParse(data.Category.Replace(".", ""), true, out builtInCategory);
 
-                    // Step1 获取标高和偏移
+                    // Step1 레벨 및 오프셋 가져오기
                     Level baseLevel = null;
                     Level topLevel = null;
                     double topOffset = -1;  // ft
@@ -62,7 +62,7 @@ namespace RevitMCPCommandSet.Services
                     if (baseLevel == null)
                         continue;
 
-                    // Step2 获取族类型
+                    // Step2 패밀리 타입 가져오기
                     FamilySymbol symbol = null;
                     if (data.TypeId != -1 && data.TypeId != 0)
                     {
@@ -73,7 +73,7 @@ namespace RevitMCPCommandSet.Services
                             if (typeEle != null && typeEle is FamilySymbol)
                             {
                                 symbol = typeEle as FamilySymbol;
-                                // 获取symbol的Category对象并转换为BuiltInCategory枚举
+                                // symbol의 Category 객체를 가져와 BuiltInCategory 열거형으로 변환
                                 builtInCategory = (BuiltInCategory)symbol.Category.Id.GetIntValue();
                             }
                         }
@@ -86,7 +86,7 @@ namespace RevitMCPCommandSet.Services
                             .OfClass(typeof(FamilySymbol))
                             .OfCategory(builtInCategory)
                             .Cast<FamilySymbol>()
-                            .FirstOrDefault(fs => fs.IsActive); // 获取激活的类型作为默认类型
+                            .FirstOrDefault(fs => fs.IsActive); // 활성화된 타입을 기본 타입으로 가져오기
                         if (symbol == null)
                         {
                             symbol = new FilteredElementCollector(doc)
@@ -108,8 +108,8 @@ namespace RevitMCPCommandSet.Services
                     if (symbol == null)
                         continue;
 
-                    // Step3 调用通用方法创建族实例
-                    using (Transaction transaction = new Transaction(doc, "创建点状构件"))
+                    // Step3 공통 메서드를 호출하여 패밀리 인스턴스 생성
+                    using (Transaction transaction = new Transaction(doc, "점형 구성요소 생성"))
                     {
                         transaction.Start();
 
@@ -232,21 +232,21 @@ namespace RevitMCPCommandSet.Services
                 Result = new AIResult<List<int>>
                 {
                     Success = false,
-                    Message = $"创建点状构件时出错: {ex.Message}",
+                    Message = $"점형 구성요소 생성 중 오류: {ex.Message}",
                 };
-                TaskDialog.Show("错误", $"创建点状构件时出错: {ex.Message}");
+                TaskDialog.Show("오류", $"점형 구성요소 생성 중 오류: {ex.Message}");
             }
             finally
             {
-                _resetEvent.Set(); // 通知等待线程操作已完成
+                _resetEvent.Set(); // 대기 스레드에게 작업 완료 알림
             }
         }
 
         /// <summary>
-        /// 等待创建完成
+        /// 생성 완료 대기
         /// </summary>
-        /// <param name="timeoutMilliseconds">超时时间（毫秒）</param>
-        /// <returns>操作是否在超时前完成</returns>
+        /// <param name="timeoutMilliseconds">타임아웃 시간 (밀리초)</param>
+        /// <returns>작업이 타임아웃 이전에 완료되었는지 여부</returns>
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)
         {
             _resetEvent.Reset();
@@ -254,11 +254,11 @@ namespace RevitMCPCommandSet.Services
         }
 
         /// <summary>
-        /// IExternalEventHandler.GetName 实现
+        /// IExternalEventHandler.GetName 구현
         /// </summary>
         public string GetName()
         {
-            return "创建点状构件";
+            return "점형 구성요소 생성";
         }
 
     }

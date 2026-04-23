@@ -17,13 +17,13 @@ namespace revit_mcp_plugin.Configuration
         {
             _logger = logger;
 
-            // 配置文件路径
+            // 구성 파일 경로
             // Configuration file path.
             _configPath = PathManager.GetCommandRegistryFilePath();
         }
 
         /// <summary>
-        /// <para>加载配置</para>
+        /// <para>구성 로드</para>
         /// <para>Load configuration from a JSON file.</para>
         /// </summary>
         public void LoadConfiguration()
@@ -34,31 +34,31 @@ namespace revit_mcp_plugin.Configuration
                 {
                     string json = File.ReadAllText(_configPath);
                     Config = JsonConvert.DeserializeObject<FrameworkConfig>(json);
-                    _logger.Info("已加载配置文件: {0}\nConfiguration file loaded: {0}", _configPath);
+                    _logger.Info("구성 파일을 로드함: {0}\nConfiguration file loaded: {0}", _configPath);
                 }
                 else
                 {
-                    _logger.Error("未找到配置文件\nNo configuration file found.");
+                    _logger.Error("구성 파일을 찾을 수 없음\nNo configuration file found.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error("加载配置文件失败: {0}\nFailed to load configuration file: {0}", ex.Message);
+                _logger.Error("구성 파일 로드 실패: {0}\nFailed to load configuration file: {0}", ex.Message);
             }
 
-            // 记录加载时间
+            // 로드 시간 기록
             // Register load time.
             _lastConfigLoadTime = DateTime.Now;
         }
 
         ///// <summary>
-        ///// <para>重新加载配置</para>
+        ///// <para>구성 다시 로드</para>
         ///  <para>Reload configuration.</para>
         ///// </summary>
         //public void RefreshConfiguration()
         //{
         //    LoadConfiguration();
-        //    _logger.Info("配置已重新加载\nConfiguration has been reloaded.");
+        //// _logger.Info("구성이 다시 로드됨\nConfiguration has been reloaded.");
         //}
 
         //public bool HasConfigChanged()

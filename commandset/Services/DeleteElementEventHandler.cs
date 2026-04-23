@@ -6,17 +6,17 @@ namespace RevitMCPCommandSet.Services
 {
     public class DeleteElementEventHandler : IExternalEventHandler, IWaitableExternalEventHandler
     {
-        // 执行结果
+        // 실행 결과
         public bool IsSuccess { get; private set; }
 
-        // 成功删除的元素数量
+        // 성공적으로 삭제된 엘리먼트 수
         public int DeletedCount { get; private set; }
-        // 状态同步对象
+        // 상태 동기화 객체
         public bool TaskCompleted { get; private set; }
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
-        // 要删除的元素ID数组
+        // 삭제할 엘리먼트 ID 배열
         public string[] ElementIds { get; set; }
-        // 实现IWaitableExternalEventHandler接口
+        // IWaitableExternalEventHandler 인터페이스 구현
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)
         {
             _resetEvent.Reset();
@@ -33,7 +33,7 @@ namespace RevitMCPCommandSet.Services
                     IsSuccess = false;
                     return;
                 }
-                // 创建待删除元素ID集合
+                // 삭제 대상 엘리먼트 ID 컬렉션 생성
                 List<ElementId> elementIdsToDelete = new List<ElementId>();
                 List<string> invalidIds = new List<string>();
                 foreach (var idStr in ElementIds)
@@ -41,7 +41,7 @@ namespace RevitMCPCommandSet.Services
                     if (int.TryParse(idStr, out int elementIdValue))
                     {
                         var elementId = new ElementId(elementIdValue);
-                        // 检查元素是否存在
+                        // 엘리먼트 존재 여부 확인
                         if (doc.GetElement(elementId) != null)
                         {
                             elementIdsToDelete.Add(elementId);
@@ -54,16 +54,16 @@ namespace RevitMCPCommandSet.Services
                 }
                 if (invalidIds.Count > 0)
                 {
-                    TaskDialog.Show("警告", $"以下ID无效或元素不存在：{string.Join(", ", invalidIds)}");
+                    TaskDialog.Show("경고", $"다음 ID가 유효하지 않거나 엘리먼트가 존재하지 않음: {string.Join(", ", invalidIds)}");
                 }
-                // 如果有可删除的元素，则执行删除
+                // 삭제 가능한 엘리먼트가 있으면, 삭제 실행
                 if (elementIdsToDelete.Count > 0)
                 {
                     using (var transaction = new Transaction(doc, "Delete Elements"))
                     {
                         transaction.Start();
 
-                        // 批量删除元素
+                        // 엘리먼트 일괄 삭제
                         ICollection<ElementId> deletedIds = doc.Delete(elementIdsToDelete);
                         DeletedCount = deletedIds.Count;
 
@@ -73,13 +73,13 @@ namespace RevitMCPCommandSet.Services
                 }
                 else
                 {
-                    TaskDialog.Show("错误", "没有有效的元素可以删除");
+                    TaskDialog.Show("오류", "삭제할 수 있는 유효한 엘리먼트가 없음");
                     IsSuccess = false;
                 }
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("错误", "删除元素失败: " + ex.Message);
+                TaskDialog.Show("오류", "엘리먼트 삭제 실패: " + ex.Message);
                 IsSuccess = false;
             }
             finally
@@ -90,7 +90,7 @@ namespace RevitMCPCommandSet.Services
         }
         public string GetName()
         {
-            return "删除元素";
+            return "엘리먼트 삭제";
         }
     }
 }

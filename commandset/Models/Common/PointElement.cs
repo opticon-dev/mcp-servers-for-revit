@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 namespace RevitMCPCommandSet.Models.Common;
 
 /// <summary>
-///     点状构件
+///     점형 구성요소
 /// </summary>
 public class PointElement
 {
@@ -13,73 +13,73 @@ public class PointElement
     }
 
     /// <summary>
-    ///     构件类型
+    ///     구성요소 타입
     /// </summary>
     [JsonProperty("category")]
     public string Category { get; set; } = "INVALID";
 
     /// <summary>
-    ///     类型Id
+    ///     타입 ID
     /// </summary>
     [JsonProperty("typeId")]
     public int TypeId { get; set; } = -1;
 
     /// <summary>
-    ///     定位点坐标
+    ///     위치점 좌표
     /// </summary>
     [JsonProperty("locationPoint")]
     public JZPoint LocationPoint { get; set; }
 
     /// <summary>
-    ///     宽度
+    ///     너비
     /// </summary>
     [JsonProperty("width")]
     public double Width { get; set; } = -1;
 
     /// <summary>
-    ///     深度
+    ///     깊이
     /// </summary>
     [JsonProperty("depth")]
     public double Depth { get; set; }
 
     /// <summary>
-    ///     高度
+    ///     높이
     /// </summary>
     [JsonProperty("height")]
     public double Height { get; set; }
 
     /// <summary>
-    ///     底部标高
+    ///     하단 레벨
     /// </summary>
     [JsonProperty("baseLevel")]
     public double BaseLevel { get; set; }
 
     /// <summary>
-    ///     底部偏移
+    ///     하단 오프셋
     /// </summary>
     [JsonProperty("baseOffset")]
     public double BaseOffset { get; set; }
 
     /// <summary>
-    ///     旋转角度（度），用于非宿主构件（如家具）
+    ///     회전 각도 (도), 비호스트 구성요소(예: 가구)에 사용
     /// </summary>
     [JsonProperty("rotation")]
     public double Rotation { get; set; } = 0;
 
     /// <summary>
-    ///     显式宿主墙体ElementId，-1表示自动检测
+    ///     명시적 호스트 벽체 ElementId, -1은 자동 감지를 의미
     /// </summary>
     [JsonProperty("hostWallId")]
     public int HostWallId { get; set; } = -1;
 
     /// <summary>
-    ///     是否翻转门窗朝向
+    ///     문/창문의 방향을 뒤집을지 여부
     /// </summary>
     [JsonProperty("facingFlipped")]
     public bool FacingFlipped { get; set; } = false;
 
     /// <summary>
-    ///     参数化属性
+    ///     매개변수 속성
     /// </summary>
     [JsonProperty("parameters")]
     public Dictionary<string, double> Parameters { get; set; }

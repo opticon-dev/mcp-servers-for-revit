@@ -24,14 +24,14 @@ namespace RevitMCPCommandSet.Commands.Access
 
         public override object Execute(JObject parameters, string requestId)
         {
-            // 触发外部事件并等待完成
-            if (RaiseAndWaitForCompletion(10000)) // 10秒超时
+            // 외부 이벤트를 트리거하고 완료 대기
+            if (RaiseAndWaitForCompletion(10000)) // 10초 타임아웃
             {
                 return _handler.ResultInfo;
             }
             else
             {
-                throw new TimeoutException("获取信息超时");
+                throw new TimeoutException("정보 가져오기 시간 초과");
             }
         }
     }

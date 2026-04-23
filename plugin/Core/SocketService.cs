@@ -50,43 +50,43 @@ namespace revit_mcp_plugin.Core
             set => _port = value;
         }
 
-        // 初始化
+        // 초기화
         // Initialization.
         public void Initialize(UIApplication uiApp)
         {
             _uiApp = uiApp;
 
-            // 初始化事件管理器
+            // 이벤트 관리자 초기화
             // Initialize ExternalEventManager
             ExternalEventManager.Instance.Initialize(uiApp, _logger);
 
-            // 记录当前 Revit 版本
+            // 현재 Revit 버전 기록
             // Get the current Revit version.
             var versionAdapter = new RevitMCPSDK.API.Utils.RevitVersionAdapter(_uiApp.Application);
             string currentVersion = versionAdapter.GetRevitVersion();
-            _logger.Info("当前 Revit 版本: {0}\nCurrent Revit version: {0}", currentVersion);
+            _logger.Info("현재 Revit 버전: {0}\nCurrent Revit version: {0}", currentVersion);
 
 
 
-            // 创建命令执行器
+            // 명령 실행기 생성
             // Create CommandExecutor
             _commandExecutor = new CommandExecutor(_commandRegistry, _logger);
 
-            // 加载配置并注册命令
+            // 설정을 로드하고 명령을 등록
             // Load configuration and register commands.
             ConfigurationManager configManager = new ConfigurationManager(_logger);
             configManager.LoadConfiguration();
             
 
-            //// 从配置中读取服务端口
+            //// 설정에서 서비스 포트를 읽기
             //// Read the service port from the configuration.
             //if (configManager.Config.Settings.Port > 0)
             //{
             //    _port = configManager.Config.Settings.Port;
             //}
-            _port = 8080; // 固定端口号 - Hard-wired port number.
+            _port = 8080; // 고정 포트 번호
 
-            // 加载命令
+            // 명령 로드
             // Load command.
             CommandManager commandManager = new CommandManager(
                 _commandRegistry, _logger, configManager, _uiApp);
@@ -175,7 +175,7 @@ namespace revit_mcp_plugin.Core
 
                 while (_isRunning && tcpClient.Connected)
                 {
-                    // 读取客户端消息
+                    // 클라이언트 메시지 읽기
                     // Read client messages.
                     int bytesRead = 0;
 
@@ -185,24 +185,24 @@ namespace revit_mcp_plugin.Core
                     }
                     catch (IOException)
                     {
-                        // 客户端断开连接
+                        // 클라이언트 연결 끊김
                         // Client disconnected.
                         break;
                     }
 
                     if (bytesRead == 0)
                     {
-                        // 客户端断开连接
+                        // 클라이언트 연결 끊김
                         // Client disconnected.
                         break;
                     }
 
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    System.Diagnostics.Trace.WriteLine($"收到消息: {message}\nReceived message: {message}");
+                    System.Diagnostics.Trace.WriteLine($"메시지 수신: {message}\nReceived message: {message}");
 
                     string response = ProcessJsonRPCRequest(message);
 
-                    // 发送响应
+                    // 응답 전송
                     // Send response.
                     byte[] responseData = Encoding.UTF8.GetBytes(response);
                     stream.Write(responseData, 0, responseData.Length);
@@ -224,11 +224,11 @@ namespace revit_mcp_plugin.Core
 
             try
             {
-                // 解析JSON-RPC请求
+                // JSON-RPC 요청 파싱
                 // Parse JSON-RPC requests.
                 request = JsonConvert.DeserializeObject<JsonRPCRequest>(requestJson);
 
-                // 验证请求格式是否有效
+                // 요청 형식이 유효한지 검증
                 // Verify that the request format is valid.
                 if (request == null || !request.IsValid())
                 {
@@ -239,7 +239,7 @@ namespace revit_mcp_plugin.Core
                     );
                 }
 
-                // 查找命令
+                // 명령 찾기
                 // Search for the command in the registry.
                 if (!_commandRegistry.TryGetCommand(request.Method, out var command))
                 {
@@ -247,7 +247,7 @@ namespace revit_mcp_plugin.Core
                         $"Method '{request.Method}' not found");
                 }
 
-                // 执行命令
+                // 명령 실행
                 // Execute command.
                 try
                 {                
@@ -262,7 +262,7 @@ namespace revit_mcp_plugin.Core
             }
             catch (JsonException)
             {
-                // JSON解析错误
+                // JSON 파싱 오류
                 // JSON parsing error.
                 return CreateErrorResponse(
                     null,
@@ -272,7 +272,7 @@ namespace revit_mcp_plugin.Core
             }
             catch (Exception ex)
             {
-                // 处理请求时的其他错误
+                // 요청 처리 중 발생한 기타 오류
                 // Catch other errors produced when processing requests.
                 return CreateErrorResponse(
                     null,

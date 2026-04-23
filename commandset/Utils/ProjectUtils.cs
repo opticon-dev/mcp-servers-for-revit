@@ -10,20 +10,20 @@ namespace RevitMCPCommandSet.Utils
     public static class ProjectUtils
     {
         /// <summary>
-        /// 创建族实例的通用方法
+        /// 패밀리 인스턴스를 생성하는 공통 메서드
         /// </summary>
-        /// <param name="doc">当前文档</param>
-        /// <param name="familySymbol">族类型</param>
-        /// <param name="locationPoint">位置点</param>
-        /// <param name="locationLine">基准线</param>
-        /// <param name="baseLevel">底部标高</param>
-        /// <param name="topLevel">第二个标高(用于TwoLevelsBased)</param>
-        /// <param name="baseOffset">底部偏移（ft）</param>
-        /// <param name="topOffset">顶部偏移（ft）</param>
-        /// <param name="faceDirection">参考方向</param>
-        /// <param name="handDirection">参考方向</param>
-        /// <param name="view">视图</param>
-        /// <returns>创建的族实例，失败返回null</returns>
+        /// <param name="doc">현재 문서</param>
+        /// <param name="familySymbol">패밀리 타입</param>
+        /// <param name="locationPoint">위치 점</param>
+        /// <param name="locationLine">기준선</param>
+        /// <param name="baseLevel">하단 레벨</param>
+        /// <param name="topLevel">두 번째 레벨(TwoLevelsBased용)</param>
+        /// <param name="baseOffset">하단 오프셋(ft)</param>
+        /// <param name="topOffset">상단 오프셋(ft)</param>
+        /// <param name="faceDirection">기준 방향</param>
+        /// <param name="handDirection">기준 방향</param>
+        /// <param name="view">뷰</param>
+        /// <returns>생성된 패밀리 인스턴스, 실패 시 null 반환</returns>
         public static FamilyInstance CreateInstance(
             this Document doc,
             FamilySymbol familySymbol,
@@ -39,48 +39,48 @@ namespace RevitMCPCommandSet.Utils
             Element explicitHost = null,
             bool snapToHostCenter = true)
         {
-            // 基本参数检查
+            // 기본 파라미터 검사
             if (doc == null)
-                throw new ArgumentNullException($"必要参数{typeof(Document)} {nameof(doc)}缺失！");
+                throw new ArgumentNullException($"필수 파라미터 {typeof(Document)} {nameof(doc)} 이(가) 누락되었습니다!");
             if (familySymbol == null)
-                throw new ArgumentNullException($"必要参数{typeof(FamilySymbol)} {nameof(familySymbol)}缺失！");
+                throw new ArgumentNullException($"필수 파라미터 {typeof(FamilySymbol)} {nameof(familySymbol)} 이(가) 누락되었습니다!");
 
-            // 激活族模型
+            // 패밀리 모델 활성화
             if (!familySymbol.IsActive)
                 familySymbol.Activate();
 
             FamilyInstance instance = null;
 
-            // 根据族的放置类型选择创建方法
+            // 패밀리 배치 유형에 따라 생성 방법 선택
             switch (familySymbol.Family.FamilyPlacementType)
             {
-                // 基于单个标高的族（如：公制常规模型）
+                // 단일 레벨 기반 패밀리(예: 미터법 일반 모델)
                 case FamilyPlacementType.OneLevelBased:
                     if (locationPoint == null)
-                        throw new ArgumentNullException($"必要参数{typeof(XYZ)} {nameof(locationPoint)}缺失！");
-                    // 带标高信息
+                        throw new ArgumentNullException($"필수 파라미터 {typeof(XYZ)} {nameof(locationPoint)} 이(가) 누락되었습니다!");
+                    // 레벨 정보 포함
                     if (baseLevel != null)
                     {
                         instance = doc.Create.NewFamilyInstance(
-                            locationPoint,                  // 实例将被放置的物理位置
-                            familySymbol,                   // 表示要插入的实例类型的 FamilySymbol 对象
-                            baseLevel,                      // 用作对象基准标高的 Level 对象
-                            StructuralType.NonStructural);  // 如果是结构构件，则指定构件的类型
+                            locationPoint,                  // 인스턴스가 배치될 물리적 위치
+                            familySymbol,                   // 삽입할 인스턴스 타입을 나타내는 FamilySymbol 객체
+                            baseLevel,                      // 객체의 기준 레벨로 사용할 Level 객체
+                            StructuralType.NonStructural);  // 구조 부재인 경우 부재의 타입을 지정
                     }
-                    // 不带标高信息
+                    // 레벨 정보 미포함
                     else
                     {
                         instance = doc.Create.NewFamilyInstance(
-                            locationPoint,                  // 实例将被放置的物理位置
-                            familySymbol,                   // 表示要插入的实例类型的 FamilySymbol 对象
-                            StructuralType.NonStructural);  // 如果是结构构件，则指定构件的类型
+                            locationPoint,                  // 인스턴스가 배치될 물리적 위치
+                            familySymbol,                   // 삽입할 인스턴스 타입을 나타내는 FamilySymbol 객체
+                            StructuralType.NonStructural);  // 구조 부재인 경우 부재의 타입을 지정
                     }
                     break;
 
-                // 基于单个标高和主体的族（如：门、窗）
+                // 단일 레벨과 호스트 기반 패밀리(예: 문, 창)
                 case FamilyPlacementType.OneLevelBasedHosted:
                     if (locationPoint == null)
-                        throw new ArgumentNullException($"必要参数{typeof(XYZ)} {nameof(locationPoint)}缺失！");
+                        throw new ArgumentNullException($"필수 파라미터 {typeof(XYZ)} {nameof(locationPoint)} 이(가) 누락되었습니다!");
 
                     Element host = explicitHost;
                     XYZ placementPoint = locationPoint;
@@ -116,7 +116,7 @@ namespace RevitMCPCommandSet.Utils
                     }
 
                     if (host == null)
-                        throw new ArgumentNullException($"找不到合规的的宿主信息！");
+                        throw new ArgumentNullException($"적합한 호스트 정보를 찾을 수 없습니다!");
 
                     if (baseLevel != null)
                     {
@@ -147,25 +147,24 @@ namespace RevitMCPCommandSet.Utils
                     }
                     break;
 
-                // 基于两个标高的族（如：柱子）
+                // 두 개의 레벨 기반 패밀리(예: 기둥)
                 case FamilyPlacementType.TwoLevelsBased:
                     if (locationPoint == null)
-                        throw new ArgumentNullException($"必要参数{typeof(XYZ)} {nameof(locationPoint)}缺失！");
+                        throw new ArgumentNullException($"필수 파라미터 {typeof(XYZ)} {nameof(locationPoint)} 이(가) 누락되었습니다!");
                     if (baseLevel == null)
-                        throw new ArgumentNullException($"必要参数{typeof(Level)} {nameof(baseLevel)}缺失！");
-                    // 判断是结构柱还是建筑柱
+                        throw new ArgumentNullException($"필수 파라미터 {typeof(Level)} {nameof(baseLevel)} 이(가) 누락되었습니다!");
+                    // 구조 기둥인지 건축 기둥인지 판별
                     StructuralType structuralType = StructuralType.NonStructural;
                     if (familySymbol.Category.Id.GetIntValue() == (int)BuiltInCategory.OST_StructuralColumns)
                         structuralType = StructuralType.Column;
                     instance = doc.Create.NewFamilyInstance(
-                        locationPoint,              // 实例将被放置的物理位置
-                        familySymbol,               // 表示要插入的实例类型的 FamilySymbol 对象
-                        baseLevel,                  // 用作对象基准标高的 Level 对象
-                        structuralType);            // 如果是结构构件，则指定构件的类型
-                    // 设置底部标高、顶部标高、底部偏移、顶部偏移
+                        locationPoint,              // 인스턴스가 배치될 물리적 위치
+                        familySymbol,               // 삽입할 인스턴스 타입을 나타내는 FamilySymbol 객체
+                        baseLevel,                  // 객체의 기준 레벨로 사용할 Level 객체
+                        structuralType);            // 하단 레벨, 상단 레벨, 하단 오프셋, 상단 오프셋 설정
                     if (instance != null)
                     {
-                        // 设置柱子的基准标高和顶部标高
+                        // 기둥의 기준 레벨과 상단 레벨 설정
                         if (baseLevel != null)
                         {
                             Parameter baseLevelParam = instance.get_Parameter(BuiltInParameter.FAMILY_BASE_LEVEL_PARAM);
@@ -178,24 +177,24 @@ namespace RevitMCPCommandSet.Utils
                             if (topLevelParam != null)
                                 topLevelParam.Set(topLevel.Id);
                         }
-                        // 获取底部偏移参数
+                        // 하단 오프셋 파라미터 가져오기
                         if (baseOffset != -1)
                         {
                             Parameter baseOffsetParam = instance.get_Parameter(BuiltInParameter.FAMILY_BASE_LEVEL_OFFSET_PARAM);
                             if (baseOffsetParam != null && baseOffsetParam.StorageType == StorageType.Double)
                             {
-                                // 将毫米转换为Revit内部单位
+                                // 밀리미터를 Revit 내부 단위로 변환
                                 double baseOffsetInternal = baseOffset;
                                 baseOffsetParam.Set(baseOffsetInternal);
                             }
                         }
-                        // 获取顶部偏移参数
+                        // 상단 오프셋 파라미터 가져오기
                         if (topOffset != -1)
                         {
                             Parameter topOffsetParam = instance.get_Parameter(BuiltInParameter.FAMILY_TOP_LEVEL_OFFSET_PARAM);
                             if (topOffsetParam != null && topOffsetParam.StorageType == StorageType.Double)
                             {
-                                // 将毫米转换为Revit内部单位
+                                // 밀리미터를 Revit 내부 단위로 변환
                                 double topOffsetInternal = topOffset;
                                 topOffsetParam.Set(topOffsetInternal);
                             }
@@ -203,68 +202,68 @@ namespace RevitMCPCommandSet.Utils
                     }
                     break;
 
-                // 族是视图专有的（例如，详图注释）
+                // 뷰 전용 패밀리(예: 상세 주석)
                 case FamilyPlacementType.ViewBased:
                     if (locationPoint == null)
-                        throw new ArgumentNullException($"必要参数{typeof(XYZ)} {nameof(locationPoint)}缺失！");
+                        throw new ArgumentNullException($"필수 파라미터 {typeof(XYZ)} {nameof(locationPoint)} 이(가) 누락되었습니다!");
                     instance = doc.Create.NewFamilyInstance(
-                        locationPoint,  // 族实例的原点。如果创建在平面视图（ViewPlan）上，该原点将被投影到平面视图上
-                        familySymbol,   // 表示要插入的实例类型的族符号对象
-                        view);          // 放置族实例的2D视图
+                        locationPoint,  // 패밀리 인스턴스의 원점입니다. 평면 뷰(ViewPlan)에 생성하면 이 원점이 평면 뷰에 투영됩니다
+                        familySymbol,   // 삽입할 인스턴스 타입을 나타내는 패밀리 심볼 객체
+                        view);          // 패밀리 인스턴스를 배치할 2D 뷰
                     break;
 
-                // 基于工作平面的族（如：基于面的公制常规模型，包括基于面、基于墙等）
+                // 작업 평면 기반 패밀리(예: 면 기반/벽 기반 일반 모델)
                 case FamilyPlacementType.WorkPlaneBased:
                     if (locationPoint == null)
-                        throw new ArgumentNullException($"必要参数{typeof(XYZ)} {nameof(locationPoint)}缺失！");
-                    // 获取最近的宿主面
+                        throw new ArgumentNullException($"필수 파라미터 {typeof(XYZ)} {nameof(locationPoint)} 이(가) 누락되었습니다!");
+                    // 가장 가까운 호스트 면 가져오기
                     Reference hostFace = doc.GetNearestFaceReference(locationPoint, 1000 / 304.8);
                     if (hostFace == null)
-                        throw new ArgumentNullException($"找不到合规的的宿主信息！");
+                        throw new ArgumentNullException($"적합한 호스트 정보를 찾을 수 없습니다!");
                     if (faceDirection == null || faceDirection == XYZ.Zero)
                     {
                         var result = doc.GenerateDefaultOrientation(hostFace);
                         faceDirection = result.FacingOrientation;
                     }
-                    // 使用点和方向在面上创建族实例
+                    // 점과 방향을 사용해 면 위에 패밀리 인스턴스 생성
                     instance = doc.Create.NewFamilyInstance(
-                        hostFace,               // 对面的引用  
-                        locationPoint,          // 实例将被放置的面上的点
-                        faceDirection,          // 定义族实例方向的向量。请注意，此方向定义了实例在面上的旋转，因此不能与面法线平行
-                        familySymbol);          // 表示要插入的实例类型的 FamilySymbol 对象。请注意，此FamilySymbol必须表示 FamilyPlacementType 为 WorkPlaneBased 的族
+                        hostFace,               // 면에 대한 레퍼런스  
+                        locationPoint,          // 인스턴스가 배치될 면 위의 점
+                        faceDirection,          // 패밀리 인스턴스 방향을 정의하는 벡터입니다. 이 방향은 면 위에서의 회전을 정의하므로 면 법선과 평행할 수 없습니다
+                        familySymbol);          // 삽입할 인스턴스 타입을 나타내는 FamilySymbol 객체입니다. 이 FamilySymbol은 FamilyPlacementType이 WorkPlaneBased인 패밀리여야 합니다
                     break;
 
-                // 基于线且在工作平面上的族（如：基于线的公制常规模型）
+                // 작업 평면 위의 선 기반 패밀리(예: 선 기반 일반 모델)
                 case FamilyPlacementType.CurveBased:
                     if (locationLine == null)
-                        throw new ArgumentNullException($"必要参数{typeof(Line)} {nameof(locationLine)}缺失！");
+                        throw new ArgumentNullException($"필수 파라미터 {typeof(Line)} {nameof(locationLine)} 이(가) 누락되었습니다!");
 
-                    // 获取最近的宿主面（不允许有误差）
+                    // 가장 가까운 호스트 면 가져오기(오차 허용 안 함)
                     Reference lineHostFace = doc.GetNearestFaceReference(locationLine.Evaluate(0.5, true), 1e-5);
                     if (lineHostFace != null)
                     {
                         instance = doc.Create.NewFamilyInstance(
-                            lineHostFace,   // 对面的引用 
-                            locationLine,   // 族实例基于的曲线
-                            familySymbol);  // 一个FamilySymbol对象，表示要插入的实例的类型。请注意，此Symbol必须表示其 FamilyPlacementType 为 WorkPlaneBased 或 CurveBased 的族
+                            lineHostFace,   // 면에 대한 레퍼런스 
+                            locationLine,   // 패밀리 인스턴스가 기준으로 삼는 곡선
+                            familySymbol);  // 삽입할 인스턴스의 타입을 나타내는 FamilySymbol 객체입니다. 이 Symbol은 FamilyPlacementType이 WorkPlaneBased 또는 CurveBased인 패밀리여야 합니다
                     }
                     else
                     {
                         instance = doc.Create.NewFamilyInstance(
-                            locationLine,                   // 族实例基于的曲线
-                            familySymbol,                   // 一个FamilySymbol对象，表示要插入的实例的类型。请注意，此Symbol必须表示其 FamilyPlacementType 为 WorkPlaneBased 或 CurveBased 的族
-                            baseLevel,                      // 一个Level对象，用作该对象的基准标高
-                            StructuralType.NonStructural);  // 如果是结构构件，则指定构件的类型
+                            locationLine,                   // 패밀리 인스턴스가 기준으로 삼는 곡선
+                            familySymbol,                   // 삽입할 인스턴스의 타입을 나타내는 FamilySymbol 객체입니다. 이 Symbol은 FamilyPlacementType이 WorkPlaneBased 또는 CurveBased인 패밀리여야 합니다
+                            baseLevel,                      // 객체의 기준 레벨로 사용할 Level 객체
+                            StructuralType.NonStructural);  // 구조 부재인 경우 부재의 타입을 지정
                     }
                     if (instance != null)
                     {
-                        // 获取底部偏移参数
+                        // 하단 오프셋 파라미터 가져오기
                         if (baseOffset != -1)
                         {
                             Parameter baseOffsetParam = instance.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM);
                             if (baseOffsetParam != null && baseOffsetParam.StorageType == StorageType.Double)
                             {
-                                // 将毫米转换为Revit内部单位
+                                // 밀리미터를 Revit 내부 단위로 변환
                                 double baseOffsetInternal = baseOffset;
                                 baseOffsetParam.Set(baseOffsetInternal);
                             }
@@ -272,34 +271,34 @@ namespace RevitMCPCommandSet.Utils
                     }
                     break;
 
-                // 基于线且在特定视图中的族（如：详图组件）
+                // 특정 뷰의 선 기반 패밀리(예: 상세 컴포넌트)
                 case FamilyPlacementType.CurveBasedDetail:
                     if (locationLine == null)
-                        throw new ArgumentNullException($"必要参数{typeof(Line)} {nameof(locationLine)}缺失！");
+                        throw new ArgumentNullException($"필수 파라미터 {typeof(Line)} {nameof(locationLine)} 이(가) 누락되었습니다!");
                     if (view == null)
-                        throw new ArgumentNullException($"必要参数{typeof(View)} {nameof(view)}缺失！");
+                        throw new ArgumentNullException($"필수 파라미터 {typeof(View)} {nameof(view)} 이(가) 누락되었습니다!");
                     instance = doc.Create.NewFamilyInstance(
-                        locationLine,   // 族实例的线位置。该线必须位于视图平面内
-                        familySymbol,   // 表示要插入的实例类型的族符号对象
-                        view);          // 放置族实例的2D视图
+                        locationLine,   // 패밀리 인스턴스의 선 위치입니다. 이 선은 뷰 평면 안에 있어야 합니다
+                        familySymbol,   // 삽입할 인스턴스 타입을 나타내는 패밀리 심볼 객체
+                        view);          // 패밀리 인스턴스를 배치할 2D 뷰
                     break;
 
-                // 结构曲线驱动的族（如：梁、支撑或斜柱）
+                // 구조 곡선 구동 패밀리(예: 보, 지지대, 경사 기둥)
                 case FamilyPlacementType.CurveDrivenStructural:
                     if (locationLine == null)
-                        throw new ArgumentNullException($"必要参数{typeof(Line)} {nameof(locationLine)}缺失！");
+                        throw new ArgumentNullException($"필수 파라미터 {typeof(Line)} {nameof(locationLine)} 이(가) 누락되었습니다!");
                     if (baseLevel == null)
-                        throw new ArgumentNullException($"必要参数{typeof(Level)} {nameof(baseLevel)}缺失！");
+                        throw new ArgumentNullException($"필수 파라미터 {typeof(Level)} {nameof(baseLevel)} 이(가) 누락되었습니다!");
                     instance = doc.Create.NewFamilyInstance(
-                        locationLine,                   // 族实例基于的曲线
-                        familySymbol,                   // 一个FamilySymbol对象，表示要插入的实例的类型。请注意，此Symbol必须表示其 FamilyPlacementType 为 WorkPlaneBased 或 CurveBased 的族
-                        baseLevel,                      // 一个Level对象，用作该对象的基准标高
-                        StructuralType.Beam);           // 如果是结构构件，则指定构件的类型
+                        locationLine,                   // 패밀리 인스턴스가 기준으로 삼는 곡선
+                        familySymbol,                   // 삽입할 인스턴스의 타입을 나타내는 FamilySymbol 객체입니다. 이 Symbol은 FamilyPlacementType이 WorkPlaneBased 또는 CurveBased인 패밀리여야 합니다
+                        baseLevel,                      // 객체의 기준 레벨로 사용할 Level 객체
+                        StructuralType.Beam);           // 구조 부재인 경우 부재의 타입을 지정
                     break;
 
-                // 适应性族（如：自适应公制常规模型、幕墙嵌板）
+                // 적응형 패밀리(예: 적응형 일반 모델, 커튼월 패널)
                 case FamilyPlacementType.Adaptive:
-                    throw new NotImplementedException("未实现FamilyPlacementType.Adaptive创建方法！");
+                    throw new NotImplementedException("FamilyPlacementType.Adaptive 생성 메서드는 아직 구현되지 않았습니다!");
 
                 default:
                     break;
@@ -308,60 +307,60 @@ namespace RevitMCPCommandSet.Utils
         }
 
         /// <summary>
-        /// 生成默认的朝向和手向（默认长边是HandOrientation，短边是FacingOrientation）
+        /// 기본 방향과 손 방향 생성(긴 변은 HandOrientation, 짧은 변은 FacingOrientation)
         /// </summary>
         /// <param name="hostFace"></param>
         /// <returns></returns>
         public static (XYZ FacingOrientation, XYZ HandOrientation) GenerateDefaultOrientation(this Document doc, Reference hostFace)
         {
-            var facingOrientation = new XYZ();  // 朝向方向：族内Y轴正方向在载入后的朝向
-            var handOrientation = new XYZ();    // 手向方向：族内X轴正方向在载入后的朝向
+            var facingOrientation = new XYZ();  // 정면 방향: 패밀리 내부 Y축 양의 방향이 로드된 후 향하는 방향
+            var handOrientation = new XYZ();    // 손 방향: 패밀리 내부 X축 양의 방향이 로드된 후 향하는 방향
 
-            // Step1 从Reference中获取面对象
+            // Step1 Reference에서 면 객체 가져오기
             Face face = doc.GetElement(hostFace.ElementId).GetGeometryObjectFromReference(hostFace) as Face;
 
-            // Step2 获取面轮廓
+            // Step2 면 윤곽 가져오기
             List<Curve> profile = null;
-            // 轮廓线集合，每个子列表代表一个完整闭合轮廓，第一个通常为外轮廓
+            // 윤곽선 컬렉션으로, 각 하위 리스트는 하나의 완전한 폐합 윤곽을 나타내며 첫 번째는 보통 외곽 윤곽입니다
             List<List<Curve>> profiles = new List<List<Curve>>();
-            // 获取所有轮廓循环（外轮廓和可能的内部孔洞）
+            // 모든 윤곽 루프 가져오기(외곽 윤곽과 있을 수 있는 내부 구멍 포함)
             EdgeArrayArray edgeLoops = face.EdgeLoops;
-            // 遍历每个轮廓循环
+            // 각 윤곽 루프 순회
             foreach (EdgeArray loop in edgeLoops)
             {
                 List<Curve> currentLoop = new List<Curve>();
-                // 获取循环中的每条边
+                // 루프 안의 각 모서리 가져오기
                 foreach (Edge edge in loop)
                 {
                     Curve curve = edge.AsCurve();
                     currentLoop.Add(curve);
                 }
-                // 如果当前循环有边，则添加到结果集合
+                // 현재 루프에 모서리가 있으면 결과 컬렉션에 추가
                 if (currentLoop.Count > 0)
                 {
                     profiles.Add(currentLoop);
                 }
             }
-            // 第一个通常为外轮廓
+            // 첫 번째는 보통 외곽 윤곽
             if (profiles != null && profiles.Any())
                 profile = profiles.FirstOrDefault();
 
-            // Step3 获取面法向量
+            // Step3 면 법선 벡터 가져오기
             XYZ faceNormal = null;
-            // 如果是平面，可以直接获取法向量属性
+            // 평면이면 법선 벡터 속성을 직접 가져올 수 있음
             if (face is PlanarFace planarFace)
                 faceNormal = planarFace.FaceNormal;
 
-            // Step4 获取面的两个合规的（符合右手螺旋定则）主方向
+            // Step4 면의 두 개의 유효한 주 방향 가져오기(오른손 법칙 충족)
             var result = face.GetMainDirections();
             var primaryDirection = result.PrimaryDirection;
             var secondaryDirection = result.SecondaryDirection;
 
-            // 默认长边方向就是HandOrientation，短边方向就是FacingOrientation
+            // 기본적으로 긴 변 방향은 HandOrientation, 짧은 변 방향은 FacingOrientation
             facingOrientation = primaryDirection;
             handOrientation = secondaryDirection;
 
-            // 判断是否符合右手定则（拇指：HandOrientation，食指：FacingOrientation，中指：FaceNormal）
+            // 오른손 법칙 충족 여부 판단(엄지: HandOrientation, 검지: FacingOrientation, 중지: FaceNormal)
             if (!facingOrientation.IsRightHandRuleCompliant(handOrientation, faceNormal))
             {
                 var newHandOrientation = facingOrientation.GenerateIndexFinger(faceNormal);
@@ -375,20 +374,20 @@ namespace RevitMCPCommandSet.Utils
         }
 
         /// <summary>
-        /// 获取距离点最近的面Reference
+        /// 점에서 가장 가까운 면 Reference 가져오기
         /// </summary>
-        /// <param name="doc">当前文档</param>
-        /// <param name="location">目标点位置</param>
-        /// <param name="radius">搜索半径（内部单位）</param>
-        /// <returns>最近面的Reference，未找到返回null</returns>
+        /// <param name="doc">현재 문서</param>
+        /// <param name="location">대상 점 위치</param>
+        /// <param name="radius">검색 반경(내부 단위)</param>
+        /// <returns>가장 가까운 면 Reference, 찾지 못하면 null 반환</returns>
         public static Reference GetNearestFaceReference(this Document doc, XYZ location, double radius = 1000 / 304.8)
         {
             try
             {
-                // 误差处理
+                // 오차 처리
                 location = new XYZ(location.X, location.Y, location.Z + 0.1 / 304.8);
 
-                // 创建或获取3D视图
+                // 3D 뷰 생성 또는 가져오기
                 View3D view3D = null;
                 FilteredElementCollector collector = new FilteredElementCollector(doc)
                     .OfClass(typeof(View3D));
@@ -422,53 +421,53 @@ namespace RevitMCPCommandSet.Utils
 
                 if (view3D == null)
                 {
-                    TaskDialog.Show("错误", "无法创建或获取3D视图");
+                    TaskDialog.Show("오류", "3D 뷰를 생성하거나 가져올 수 없습니다");
                     return null;
                 }
 
-                // 设置6个方向的射线
+                // 6개 방향의 레이 설정
                 XYZ[] directions = new XYZ[]
                 {
-                  XYZ.BasisX,    // X正向
-                  -XYZ.BasisX,   // X负向
-                  XYZ.BasisY,    // Y正向
-                  -XYZ.BasisY,   // Y负向
-                  XYZ.BasisZ,    // Z正向
-                  -XYZ.BasisZ    // Z负向
+                  XYZ.BasisX,    // X 양의 방향
+                  -XYZ.BasisX,   // X 음의 방향
+                  XYZ.BasisY,    // Y 양의 방향
+                  -XYZ.BasisY,   // Y 음의 방향
+                  XYZ.BasisZ,    // Z 양의 방향
+                  -XYZ.BasisZ    // Z 음의 방향
                 };
 
-                // 创建过滤器
+                // 필터 생성
                 ElementClassFilter wallFilter = new ElementClassFilter(typeof(Wall));
                 ElementClassFilter floorFilter = new ElementClassFilter(typeof(Floor));
                 ElementClassFilter ceilingFilter = new ElementClassFilter(typeof(Ceiling));
                 ElementClassFilter instanceFilter = new ElementClassFilter(typeof(FamilyInstance));
 
-                // 组合过滤器
+                // 필터 결합
                 LogicalOrFilter categoryFilter = new LogicalOrFilter(
                     new ElementFilter[] { wallFilter, floorFilter, ceilingFilter, instanceFilter });
 
 
-                // 1. 最简单：所有实例化元素的过滤器
+                // 1. 가장 단순함: 모든 인스턴스 엘리먼트용 필터
                 //ElementFilter filter = new ElementIsElementTypeFilter(true);
 
-                // 创建射线追踪器
+                // 레이 추적기 생성
                 ReferenceIntersector refIntersector = new ReferenceIntersector(categoryFilter,
                     FindReferenceTarget.Face, view3D);
-                refIntersector.FindReferencesInRevitLinks = true; // 如果需要查找链接文件中的面
+                refIntersector.FindReferencesInRevitLinks = true; // 링크 파일의 면까지 찾아야 하는 경우
 
                 double minDistance = double.MaxValue;
                 Reference nearestFace = null;
 
                 foreach (XYZ direction in directions)
                 {
-                    // 从当前位置发射射线
+                    // 현재 위치에서 레이 발사
                     IList<ReferenceWithContext> references = refIntersector.Find(location, direction);
 
                     foreach (ReferenceWithContext rwc in references)
                     {
-                        double distance = rwc.Proximity; // 获取到面的距离
+                        double distance = rwc.Proximity; // 면까지의 거리 가져오기
 
-                        // 如果在搜索范围内且距离更近
+                        // 검색 범위 안에 있고 거리가 더 가까우면
                         if (distance <= radius && distance < minDistance)
                         {
                             minDistance = distance;
@@ -481,32 +480,32 @@ namespace RevitMCPCommandSet.Utils
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("错误", $"获取最近面时发生错误：{ex.Message}");
+                TaskDialog.Show("오류", $"가장 가까운 면을 가져오는 중 오류 발생: {ex.Message}");
                 return null;
             }
         }
 
         /// <summary>
-        /// 获取距离点最近的可作为宿主的元素
+        /// 점에서 가장 가까운 호스트 가능 엘리먼트 가져오기
         /// </summary>
-        /// <param name="doc">当前文档</param>
-        /// <param name="location">目标点位置</param>
-        /// <param name="familySymbol">族类型，用于判断宿主类型</param>
-        /// <param name="radius">搜索半径（内部单位）</param>
-        /// <returns>最近的宿主元素，未找到返回null</returns>
+        /// <param name="doc">현재 문서</param>
+        /// <param name="location">대상 점 위치</param>
+        /// <param name="familySymbol">패밀리 타입, 호스트 타입 판별용</param>
+        /// <param name="radius">검색 반경(내부 단위)</param>
+        /// <returns>가장 가까운 호스트 엘리먼트, 찾지 못하면 null 반환</returns>
         public static Element GetNearestHostElement(this Document doc, XYZ location, FamilySymbol familySymbol, double radius = 5.0)
         {
             try
             {
-                // 基本参数检查
+                // 기본 파라미터 검사
                 if (doc == null || location == null || familySymbol == null)
                     return null;
 
-                // 获取族的宿主行为参数
+                // 패밀리의 호스트 동작 파라미터 가져오기
                 Parameter hostParam = familySymbol.Family.get_Parameter(BuiltInParameter.FAMILY_HOSTING_BEHAVIOR);
                 int hostingBehavior = hostParam?.AsInteger() ?? 0;
 
-                // 创建或获取3D视图
+                // 3D 뷰 생성 또는 가져오기
                 View3D view3D = null;
                 FilteredElementCollector viewCollector = new FilteredElementCollector(doc)
                     .OfClass(typeof(View3D));
@@ -539,11 +538,11 @@ namespace RevitMCPCommandSet.Utils
 
                 if (view3D == null)
                 {
-                    TaskDialog.Show("错误", "无法创建或获取3D视图");
+                    TaskDialog.Show("오류", "3D 뷰를 생성하거나 가져올 수 없습니다");
                     return null;
                 }
 
-                // 根据宿主行为创建类型过滤器
+                // 호스트 동작에 따라 타입 필터 생성
                 ElementFilter classFilter;
                 switch (hostingBehavior)
                 {
@@ -560,38 +559,38 @@ namespace RevitMCPCommandSet.Utils
                         classFilter = new ElementClassFilter(typeof(RoofBase));
                         break;
                     default:
-                        return null; // 不支持的宿主类型
+                        return null; // 지원하지 않는 호스트 타입
                 }
 
-                // 设置6个方向的射线
+                // 6개 방향의 레이 설정
                 XYZ[] directions = new XYZ[]
                 {
-                    XYZ.BasisX,    // X正向
-                    -XYZ.BasisX,   // X负向
-                    XYZ.BasisY,    // Y正向
-                    -XYZ.BasisY,   // Y负向
-                    XYZ.BasisZ,    // Z正向
-                    -XYZ.BasisZ    // Z负向
+                    XYZ.BasisX,    // X 양의 방향
+                    -XYZ.BasisX,   // X 음의 방향
+                    XYZ.BasisY,    // Y 양의 방향
+                    -XYZ.BasisY,   // Y 음의 방향
+                    XYZ.BasisZ,    // Z 양의 방향
+                    -XYZ.BasisZ    // Z 음의 방향
                 };
 
-                // 创建射线追踪器
+                // 레이 추적기 생성
                 ReferenceIntersector refIntersector = new ReferenceIntersector(classFilter,
                     FindReferenceTarget.Element, view3D);
-                refIntersector.FindReferencesInRevitLinks = true; // 如果需要查找链接文件中的元素
+                refIntersector.FindReferencesInRevitLinks = true; // 링크 파일의 엘리먼트까지 찾아야 하는 경우
 
                 double minDistance = double.MaxValue;
                 Element nearestHost = null;
 
                 foreach (XYZ direction in directions)
                 {
-                    // 从当前位置发射射线
+                    // 현재 위치에서 레이 발사
                     IList<ReferenceWithContext> references = refIntersector.Find(location, direction);
 
                     foreach (ReferenceWithContext rwc in references)
                     {
-                        double distance = rwc.Proximity; // 获取到元素的距离
+                        double distance = rwc.Proximity; // 엘리먼트까지의 거리 가져오기
 
-                        // 如果在搜索范围内且距离更近
+                        // 검색 범위 안에 있고 거리가 더 가까우면
                         if (distance <= radius && distance < minDistance)
                         {
                             minDistance = distance;
@@ -604,7 +603,7 @@ namespace RevitMCPCommandSet.Utils
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("错误", $"获取最近宿主元素时发生错误：{ex.Message}");
+                TaskDialog.Show("오류", $"가장 가까운 호스트 엘리먼트를 가져오는 중 오류 발생: {ex.Message}");
                 return null;
             }
         }
@@ -681,16 +680,16 @@ namespace RevitMCPCommandSet.Utils
         }
 
         /// <summary>
-        /// 高亮显示指定的面
+        /// 지정한 면 하이라이트 표시
         /// </summary>
-        /// <param name="doc">当前文档</param>
-        /// <param name="faceRef">要高亮显示的面Reference</param>
-        /// <param name="duration">高亮持续时间(毫秒)，默认3000毫秒</param>
+        /// <param name="doc">현재 문서</param>
+        /// <param name="faceRef">하이라이트할 면 Reference</param>
+        /// <param name="duration">하이라이트 지속 시간(밀리초, 기본값 3000밀리초)</param>
         public static void HighlightFace(this Document doc, Reference faceRef)
         {
             if (faceRef == null) return;
 
-            // 获取实心填充图案
+            // 솔리드 채우기 패턴 가져오기
             FillPatternElement solidFill = new FilteredElementCollector(doc)
                 .OfClass(typeof(FillPatternElement))
                 .Cast<FillPatternElement>()
@@ -698,48 +697,48 @@ namespace RevitMCPCommandSet.Utils
 
             if (solidFill == null)
             {
-                TaskDialog.Show("错误", "未找到实心填充图案");
+                TaskDialog.Show("오류", "솔리드 채우기 패턴을 찾지 못했습니다");
                 return;
             }
 
-            // 创建高亮显示设置
+            // 하이라이트 표시 설정 생성
             OverrideGraphicSettings ogs = new OverrideGraphicSettings();
-            ogs.SetSurfaceForegroundPatternColor(new Color(255, 0, 0)); // 红色
+            ogs.SetSurfaceForegroundPatternColor(new Color(255, 0, 0)); // 빨간색
             ogs.SetSurfaceForegroundPatternId(solidFill.Id);
-            ogs.SetSurfaceTransparency(0); // 不透明
+            ogs.SetSurfaceTransparency(0); // 불투명
 
-            // 高亮显示
+            // 하이라이트 표시
             doc.ActiveView.SetElementOverrides(faceRef.ElementId, ogs);
         }
 
         /// <summary>
-        /// 提取面的两个主要方向向量
+        /// 면의 두 주요 방향 벡터 추출
         /// </summary>
-        /// <param name="face">输入面</param>
-        /// <returns>包含主方向和次方向的元组</returns>
-        /// <exception cref="ArgumentNullException">当面为空时抛出</exception>
-        /// <exception cref="ArgumentException">当面的轮廓不足以形成有效形状时抛出</exception>
-        /// <exception cref="InvalidOperationException">当无法提取有效方向时抛出</exception>
+        /// <param name="face">입력 면</param>
+        /// <returns>주 방향과 보조 방향을 포함하는 튜플</returns>
+        /// <exception cref="ArgumentNullException">면이 null일 때 발생</exception>
+        /// <exception cref="ArgumentException">면의 윤곽이 유효한 형상을 만들기에 부족할 때 발생</exception>
+        /// <exception cref="InvalidOperationException">유효한 방향을 추출할 수 없을 때 발생</exception>
         public static (XYZ PrimaryDirection, XYZ SecondaryDirection) GetMainDirections(this Face face)
         {
-            // 1. 参数验证
+            // 1. 파라미터 검증
             if (face == null)
-                throw new ArgumentNullException(nameof(face), "面不能为空");
+                throw new ArgumentNullException(nameof(face), "면은 비워 둘 수 없습니다");
 
-            // 2. 获取面的法向量，用于后续可能需要的垂直向量计算
+            // 2. 면의 법선 벡터 가져오기, 이후 필요할 수 있는 수직 벡터 계산에 사용
             XYZ faceNormal = face.ComputeNormal(new UV(0.5, 0.5));
 
-            // 3. 获取面的外轮廓
+            // 3. 면의 외곽 윤곽 가져오기
             EdgeArrayArray edgeLoops = face.EdgeLoops;
             if (edgeLoops.Size == 0)
-                throw new ArgumentException("面没有有效的边循环", nameof(face));
+                throw new ArgumentException("면에 유효한 에지 루프가 없습니다", nameof(face));
 
-            // 通常第一个循环是外轮廓
+            // 보통 첫 번째 루프가 외곽 윤곽임
             EdgeArray outerLoop = edgeLoops.get_Item(0);
 
-            // 4. 计算每条边的方向向量和长度
-            List<XYZ> edgeDirections = new List<XYZ>();  // 存储每条边的单位向量方向
-            List<double> edgeLengths = new List<double>(); // 存储每条边的长度
+            // 4. 각 모서리의 방향 벡터와 길이 계산
+            List<XYZ> edgeDirections = new List<XYZ>();  // 각 모서리의 단위 방향 벡터 저장
+            List<double> edgeLengths = new List<double>(); // 각 모서리의 길이 저장
 
             foreach (Edge edge in outerLoop)
             {
@@ -747,49 +746,49 @@ namespace RevitMCPCommandSet.Utils
                 XYZ startPoint = curve.GetEndPoint(0);
                 XYZ endPoint = curve.GetEndPoint(1);
 
-                // 计算从起点到终点的向量
+                // 시작점에서 끝점까지의 벡터 계산
                 XYZ direction = endPoint - startPoint;
                 double length = direction.GetLength();
 
-                // 忽略太短的边（可能是由于顶点重合或数值精度问题）
+                // 너무 짧은 모서리는 무시(정점 중복 또는 수치 정밀도 문제 가능)
                 if (length > 1e-10)
                 {
-                    edgeDirections.Add(direction.Normalize());  // 存储归一化后的方向向量
-                    edgeLengths.Add(length);                    // 存储边长
+                    edgeDirections.Add(direction.Normalize());  // 정규화된 방향 벡터 저장
+                    edgeLengths.Add(length);                    // 모서리 길이 저장
                 }
             }
 
-            if (edgeDirections.Count < 4) // 确保至少有4条边
+            if (edgeDirections.Count < 4) // 최소 4개의 모서리가 있는지 확인
             {
-                throw new ArgumentException("提供的面没有足够的边来形成有效的形状", nameof(face));
+                throw new ArgumentException("제공된 면에는 유효한 형상을 만들 만큼 충분한 변이 없습니다", nameof(face));
             }
 
-            // 5. 将相似方向的边分组
-            List<List<int>> directionGroups = new List<List<int>>();  // 存储方向组，每组包含边的索引
+            // 5. 유사한 방향의 모서리끼리 그룹화
+            List<List<int>> directionGroups = new List<List<int>>();  // 방향 그룹 저장, 각 그룹은 모서리 인덱스를 포함
 
             for (int i = 0; i < edgeDirections.Count; i++)
             {
                 bool foundGroup = false;
                 XYZ currentDirection = edgeDirections[i];
 
-                // 尝试将当前边加入已有的方向组
+                // 현재 모서리를 기존 방향 그룹에 추가 시도
                 for (int j = 0; j < directionGroups.Count; j++)
                 {
                     var group = directionGroups[j];
-                    // 计算当前组的加权平均方向
+                    // 현재 그룹의 가중 평균 방향 계산
                     XYZ groupAvgDir = CalculateWeightedAverageDirection(group, edgeDirections, edgeLengths);
 
-                    // 检查当前方向是否与组的平均方向相似（包括正反方向）
+                    // 현재 방향이 그룹 평균 방향과 유사한지 확인(정반대 방향 포함)
                     double dotProduct = Math.Abs(groupAvgDir.DotProduct(currentDirection));
-                    if (dotProduct > 0.8) // 约30度内的偏差视为相似方向
+                    if (dotProduct > 0.8) // 약 30도 이내 편차는 유사 방향으로 간주
                     {
-                        group.Add(i);  // 将当前边的索引添加到该方向组
+                        group.Add(i);  // 현재 모서리 인덱스를 해당 방향 그룹에 추가
                         foundGroup = true;
                         break;
                     }
                 }
 
-                // 如果当前边与所有已有组都不相似，创建新组
+                // 현재 모서리가 어떤 기존 그룹과도 유사하지 않으면 새 그룹 생성
                 if (!foundGroup)
                 {
                     List<int> newGroup = new List<int> { i };
@@ -797,13 +796,13 @@ namespace RevitMCPCommandSet.Utils
                 }
             }
 
-            // 6. 计算每个方向组的总权重（边长和）和平均方向
+            // 6. 각 방향 그룹의 총 가중치(모서리 길이 합)와 평균 방향 계산
             List<double> groupWeights = new List<double>();
             List<XYZ> groupDirections = new List<XYZ>();
 
             foreach (var group in directionGroups)
             {
-                // 计算该组所有边的长度总和
+                // 해당 그룹의 모든 모서리 길이 합 계산
                 double totalLength = 0;
                 foreach (int edgeIndex in group)
                 {
@@ -811,100 +810,100 @@ namespace RevitMCPCommandSet.Utils
                 }
                 groupWeights.Add(totalLength);
 
-                // 计算该组的加权平均方向
+                // 해당 그룹의 가중 평균 방향 계산
                 groupDirections.Add(CalculateWeightedAverageDirection(group, edgeDirections, edgeLengths));
             }
 
-            // 7. 按照权重排序，提取主要方向
+            // 7. 가중치 기준으로 정렬해 주요 방향 추출
             int[] sortedIndices = Enumerable.Range(0, groupDirections.Count)
                 .OrderByDescending(i => groupWeights[i])
                 .ToArray();
 
-            // 8. 构造结果
+            // 8. 결과 구성
             if (groupDirections.Count >= 2)
             {
-                // 有至少两个方向组，取权重最大的两组作为主方向和次方向
+                // 방향 그룹이 최소 두 개면 가중치가 가장 큰 두 그룹을 주 방향과 부 방향으로 사용
                 int primaryIndex = sortedIndices[0];
                 int secondaryIndex = sortedIndices[1];
 
                 return (
-                    PrimaryDirection: groupDirections[primaryIndex],      // 主方向
-                    SecondaryDirection: groupDirections[secondaryIndex]   // 次方向
+                    PrimaryDirection: groupDirections[primaryIndex],      // 주 방향
+                    SecondaryDirection: groupDirections[secondaryIndex]   // 부 방향
                 );
             }
             else if (groupDirections.Count == 1)
             {
-                // 只有一个方向组，手动创建与主方向垂直的次方向
+                // 방향 그룹이 하나뿐이면 주 방향에 수직인 부 방향을 수동으로 생성
                 XYZ primaryDirection = groupDirections[0];
-                // 使用面法向量和主方向的叉积创建垂直向量
+                // 면 법선 벡터와 주 방향의 외적으로 수직 벡터 생성
                 XYZ secondaryDirection = faceNormal.CrossProduct(primaryDirection).Normalize();
 
                 return (
-                    PrimaryDirection: primaryDirection,         // 主方向 
-                    SecondaryDirection: secondaryDirection      // 人工构造的垂直次方向
+                    PrimaryDirection: primaryDirection,         // 주 방향 
+                    SecondaryDirection: secondaryDirection      // 수동으로 구성한 수직 부 방향
                 );
             }
             else
             {
-                // 无法提取有效的方向（极少发生）
-                throw new InvalidOperationException("无法从面中提取有效的方向");
+                // 유효한 방향을 추출할 수 없음(드물게 발생)
+                throw new InvalidOperationException("면에서 유효한 방향을 추출할 수 없습니다");
             }
         }
 
         /// <summary>
-        /// 根据边长计算一组边的加权平均方向
+        /// 변 길이를 기준으로 한 그룹의 가중 평균 방향 계산
         /// </summary>
-        /// <param name="edgeIndices">边的索引列表</param>
-        /// <param name="directions">所有边的方向向量</param>
-        /// <param name="lengths">所有边的长度</param>
-        /// <returns>归一化的加权平均方向向量</returns>
+        /// <param name="edgeIndices">변 인덱스 목록</param>
+        /// <param name="directions">모든 변의 방향 벡터</param>
+        /// <param name="lengths">모든 변의 길이</param>
+        /// <returns>정규화된 가중 평균 방향 벡터</returns>
         public static XYZ CalculateWeightedAverageDirection(List<int> edgeIndices, List<XYZ> directions, List<double> lengths)
         {
             if (edgeIndices.Count == 0)
                 return null;
 
             double sumX = 0, sumY = 0, sumZ = 0;
-            XYZ referenceDir = directions[edgeIndices[0]];  // 使用组内第一个方向作为参考
+            XYZ referenceDir = directions[edgeIndices[0]];  // 그룹 내 첫 번째 방향을 기준으로 사용
 
             foreach (int i in edgeIndices)
             {
                 XYZ currentDir = directions[i];
 
-                // 计算当前方向与参考方向的点积，判断是否需要反转
+                // 현재 방향과 기준 방향의 내적을 계산해 반전이 필요한지 판단
                 double dot = referenceDir.DotProduct(currentDir);
 
-                // 如果方向相反（点积为负），反转该向量再计算贡献
-                // 这确保同一组内的向量指向一致，避免相互抵消
+                // 방향이 반대면(내적이 음수) 벡터를 반전한 뒤 기여도를 계산
+                // 이렇게 하면 같은 그룹 내 벡터 방향이 일관되어 서로 상쇄되는 것을 방지
                 double factor = (dot >= 0) ? lengths[i] : -lengths[i];
 
-                // 累加向量分量（带权重）
+                // 벡터 성분 누적(가중치 포함)
                 sumX += currentDir.X * factor;
                 sumY += currentDir.Y * factor;
                 sumZ += currentDir.Z * factor;
             }
 
-            // 创建合成向量并归一化
+            // 합성 벡터 생성 후 정규화
             XYZ avgDir = new XYZ(sumX, sumY, sumZ);
             double magnitude = avgDir.GetLength();
 
-            // 防止零向量
+            // 영벡터 방지
             if (magnitude < 1e-10)
-                return referenceDir;  // 回退至参考方向
+                return referenceDir;  // 기준 방향으로 폴백
 
-            return avgDir.Normalize();  // 返回归一化后的方向向量
+            return avgDir.Normalize();  // 정규화된 방향 벡터 반환
         }
 
         /// <summary>
-        /// 判断三个向量是否同时符合右手定则且互相严格垂直
+        /// 세 벡터가 동시에 오른손 법칙을 만족하고 서로 엄격히 수직인지 판단
         /// </summary>
-        /// <param name="thumb">拇指方向向量</param>
-        /// <param name="indexFinger">食指方向向量</param>
-        /// <param name="middleFinger">中指方向向量</param>
-        /// <param name="tolerance">判断的容差，默认为1e-6</param>
-        /// <returns>如果三个向量符合右手定则且互相垂直则返回true，否则返回false</returns>
+        /// <param name="thumb">엄지 방향 벡터</param>
+        /// <param name="indexFinger">검지 방향 벡터</param>
+        /// <param name="middleFinger">중지 방향 벡터</param>
+        /// <param name="tolerance">판단 허용오차, 기본값 1e-6</param>
+        /// <returns>세 벡터가 오른손 법칙과 수직 조건을 만족하면 true, 아니면 false</returns>
         public static bool IsRightHandRuleCompliant(this XYZ thumb, XYZ indexFinger, XYZ middleFinger, double tolerance = 1e-6)
         {
-            // 检查三个向量是否互相垂直（所有点积都接近0）
+            // 세 벡터가 서로 수직인지 확인(모든 내적이 0에 가까움)
             double dotThumbIndex = Math.Abs(thumb.DotProduct(indexFinger));
             double dotThumbMiddle = Math.Abs(thumb.DotProduct(middleFinger));
             double dotIndexMiddle = Math.Abs(indexFinger.DotProduct(middleFinger));
@@ -913,57 +912,57 @@ namespace RevitMCPCommandSet.Utils
                                   (dotThumbMiddle <= tolerance) &&
                                   (dotIndexMiddle <= tolerance);
 
-            // 只有在三个向量互相垂直的情况下才检查右手定则
+            // 세 벡터가 서로 수직일 때만 오른손 법칙을 검사
             if (!areOrthogonal)
                 return false;
 
-            // 计算叉积向量与拇指的点积，判断是否符合右手定则
+            // 외적 벡터와 엄지 방향의 내적을 계산해 오른손 법칙 충족 여부 판단
             XYZ crossProduct = indexFinger.CrossProduct(middleFinger);
             double rightHandTest = crossProduct.DotProduct(thumb);
 
-            // 点积为正值表示符合右手定则
+            // 내적이 양수이면 오른손 법칙을 충족
             return rightHandTest > tolerance;
         }
 
         /// <summary>
-        /// 根据拇指和中指方向生成符合右手定则的食指方向
+        /// 엄지와 중지 방향을 기반으로 오른손 법칙을 만족하는 검지 방향 생성
         /// </summary>
-        /// <param name="thumb">拇指方向向量</param>
-        /// <param name="middleFinger">中指方向向量</param>
-        /// <param name="tolerance">垂直判断的容差，默认为1e-6</param>
-        /// <returns>生成的食指方向向量，如果输入向量不垂直则返回null</returns>
+        /// <param name="thumb">엄지 방향 벡터</param>
+        /// <param name="middleFinger">중지 방향 벡터</param>
+        /// <param name="tolerance">수직 판정 허용오차, 기본값 1e-6</param>
+        /// <returns>생성된 검지 방향 벡터, 입력 벡터가 수직이 아니면 null 반환</returns>
         public static XYZ GenerateIndexFinger(this XYZ thumb, XYZ middleFinger, double tolerance = 1e-6)
         {
-            // 首先归一化输入向量
+            // 먼저 입력 벡터를 정규화
             XYZ normalizedThumb = thumb.Normalize();
             XYZ normalizedMiddleFinger = middleFinger.Normalize();
 
-            // 检查两个向量是否垂直（点积接近于0）
+            // 두 벡터가 수직인지 확인(내적이 0에 가까움)
             double dotProduct = normalizedThumb.DotProduct(normalizedMiddleFinger);
 
-            // 如果点积的绝对值大于容差，则向量不垂直
+            // 내적의 절대값이 허용오차보다 크면 벡터는 수직이 아님
             if (Math.Abs(dotProduct) > tolerance)
             {
                 return null;
             }
 
-            // 通过叉积计算食指方向并取反
+            // 외적으로 검지 방향을 계산하고 반전
             XYZ indexFinger = normalizedMiddleFinger.CrossProduct(normalizedThumb).Negate();
 
-            // 返回归一化后的食指方向向量
+            // 정규화된 검지 방향 벡터 반환
             return indexFinger.Normalize();
         }
 
         /// <summary>
-        /// 创建或获取指定高度的标高
+        /// 지정한 높이의 레벨을 생성하거나 가져오기
         /// </summary>
-        /// <param name="doc">revit文档</param>
-        /// <param name="elevation">标高高度（ft）</param>
-        /// <param name="levelName">标高名称</param>
+        /// <param name="doc">revitRevit 문서</param>
+        /// <param name="elevation">레벨 높이(ft)</param>
+        /// <param name="levelName">레벨 이름</param>
         /// <returns></returns>
         public static Level CreateOrGetLevel(this Document doc, double elevation, string levelName)
         {
-            // 先查找是否存在指定高度的标高
+            // 먼저 지정한 높이의 레벨이 있는지 확인
             Level existingLevel = new FilteredElementCollector(doc)
                 .OfClass(typeof(Level))
                 .Cast<Level>()
@@ -972,9 +971,9 @@ namespace RevitMCPCommandSet.Utils
             if (existingLevel != null)
                 return existingLevel;
 
-            // 创建新标高
+            // 새 레벨 생성
             Level newLevel = Level.Create(doc, elevation);
-            // 设置标高名称
+            // 레벨 이름 설정
             Level namesakeLevel = new FilteredElementCollector(doc)
                  .OfClass(typeof(Level))
                  .Cast<Level>()
@@ -989,17 +988,17 @@ namespace RevitMCPCommandSet.Utils
         }
 
         /// <summary>
-        /// 查找距离给定高度最近的标高
+        /// 주어진 높이에 가장 가까운 레벨 찾기
         /// </summary>
-        /// <param name="doc">当前Revit文档</param>
-        /// <param name="height">目标高度（Revit内部单位）</param>
-        /// <returns>距离目标高度最近的标高，若文档中没有标高则返回null</returns>
+        /// <param name="doc">현재 Revit 문서</param>
+        /// <param name="height">대상 높이(Revit 내부 단위)</param>
+        /// <returns>대상 높이에 가장 가까운 레벨, 문서에 레벨이 없으면 null 반환</returns>
         public static Level FindNearestLevel(this Document doc, double height)
         {
             if (doc == null)
-                throw new ArgumentNullException(nameof(doc), "文档不能为空");
+                throw new ArgumentNullException(nameof(doc), "문서는 비워 둘 수 없습니다");
 
-            // 直接使用LINQ查询获取距离最近的标高
+            // LINQ 쿼리로 가장 가까운 레벨을 직접 가져오기
             return new FilteredElementCollector(doc)
                 .OfClass(typeof(Level))
                 .Cast<Level>()
@@ -1008,55 +1007,50 @@ namespace RevitMCPCommandSet.Utils
         }
 
         ///// <summary>
-        ///// 刷新视图并添加延迟
+        ///// 뷰를 새로 고치고 지연 추가
         ///// </summary>
         //public static void Refresh(this Document doc, int waitingTime = 0, bool allowOperation = true)
         //{
         //    UIApplication uiApp = new UIApplication(doc.Application);
         //    UIDocument uiDoc = uiApp.ActiveUIDocument;
 
-        //    // 检查文档是否可修改
-        //    if (uiDoc.Document.IsModifiable)
+        //    // if (uiDoc.Document.IsModifiable)
         //    {
-        //        // 更新模型
-        //        uiDoc.Document.Regenerate();
+        //        // uiDoc.Document.Regenerate();
         //    }
-        //    // 更新界面
-        //    uiDoc.RefreshActiveView();
+        //    // uiDoc.RefreshActiveView();
 
-        //    // 延迟等待
-        //    if (waitingTime != 0)
+        //    // if (waitingTime != 0)
         //    {
         //        System.Threading.Thread.Sleep(waitingTime);
         //    }
 
-        //    // 允许用户进行非安全操作
-        //    if (allowOperation)
+        //    // if (allowOperation)
         //    {
         //        System.Windows.Forms.Application.DoEvents();
         //    }
         //}
 
         /// <summary>
-        /// 将指定的消息保存到桌面的指定文件中（默认覆盖文件）
+        /// 지정한 메시지를 바탕화면의 지정 파일에 저장(기본값은 덮어쓰기)
         /// </summary>
-        /// <param name="message">要保存的消息内容</param>
-        /// <param name="fileName">目标文件名</param>
+        /// <param name="message">저장할 메시지 내용</param>
+        /// <param name="fileName">대상 파일명</param>
         public static void SaveToDesktop(this string message, string fileName = "temp.json", bool isAppend = false)
         {
-            // 确保 logName 包含后缀
+            // logName에 확장자가 포함되었는지 확인
             if (!Path.HasExtension(fileName))
             {
-                fileName += ".txt"; // 默认添加 .txt 后缀
+                fileName += ".txt"; // 기본적으로 .txt 확장자 추가
             }
 
-            // 获取桌面路径
+            // 바탕 화면 경로 가져오기
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
 
-            // 组合完整的文件路径
+            // 전체 파일 경로 조합
             string filePath = Path.Combine(desktopPath, fileName);
 
-            // 写入文件（覆盖模式）
+            // 파일 쓰기(덮어쓰기 모드)
             using (StreamWriter sw = new StreamWriter(filePath, isAppend))
             {
                 sw.WriteLine($"{message}");

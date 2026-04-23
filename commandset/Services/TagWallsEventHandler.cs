@@ -11,12 +11,12 @@ namespace RevitMCPCommandSet.Services
         private Autodesk.Revit.ApplicationServices.Application app => uiApp.Application;
 
         /// <summary>
-        /// 事件等待对象
+        /// 이벤트 대기 객체
         /// </summary>
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
 
         /// <summary>
-        /// 标记结果数据
+        /// 태깅 결과 데이터
         /// </summary>
         public object TaggingResults { get; private set; }
 
@@ -24,7 +24,7 @@ namespace RevitMCPCommandSet.Services
         private string _tagTypeId;
 
         /// <summary>
-        /// 设置创建的参数
+        /// 생성 파라미터 설정
         /// </summary>
         public void SetParameters(bool useLeader, string tagTypeId)
         {
@@ -51,7 +51,7 @@ namespace RevitMCPCommandSet.Services
                 List<object> createdTags = new List<object>();
                 List<string> errors = new List<string>();
 
-                using (Transaction tran = new Transaction(doc, "标记墙体"))
+                using (Transaction tran = new Transaction(doc, "벽체 태깅"))
                 {
                     tran.Start();
 
@@ -63,7 +63,7 @@ namespace RevitMCPCommandSet.Services
                         TaggingResults = new
                         {
                             success = false,
-                            message = "没有找到墙标记族类型"
+                            message = "벽 태그 패밀리 타입을 찾을 수 없음"
                         };
                         tran.RollBack();
                         return;
@@ -120,7 +120,7 @@ namespace RevitMCPCommandSet.Services
                         }
                         catch (Exception ex)
                         {
-                            errors.Add($"标记墙体 {wall.Id.Value} 出错: {ex.Message}");
+                            errors.Add($"벽체 {wall.Id.Value} 태깅 오류: {ex.Message}");
                         }
 #else
 try
@@ -163,7 +163,7 @@ try
                         }
                         catch (Exception ex)
                         {
-                            errors.Add($"标记墙体 {wall.Id.IntegerValue} 出错: {ex.Message}");
+                            errors.Add($"벽체 {wall.Id.IntegerValue} 태깅 오류: {ex.Message}");
                         }
 #endif
                     }
@@ -182,24 +182,24 @@ try
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("错误", $"标记墙体时出错: {ex.Message}");
+                TaskDialog.Show("오류", $"벽체 태깅 중 오류 발생: {ex.Message}");
                 TaggingResults = new
                 {
                     success = false,
-                    message = $"发生错误: {ex.Message}"
+                    message = $"오류 발생: {ex.Message}"
                 };
             }
             finally
             {
-                _resetEvent.Set(); // 通知等待线程操作已完成
+                _resetEvent.Set(); // 대기 스레드에게 작업 완료 알림
             }
         }
 
         /// <summary>
-        /// 等待创建完成
+        /// 생성 완료 대기
         /// </summary>
-        /// <param name="timeoutMilliseconds">超时时间（毫秒）</param>
-        /// <returns>操作是否在超时前完成</returns>
+        /// <param name="timeoutMilliseconds">타임아웃 시간 (밀리초)</param>
+        /// <returns>작업이 타임아웃 이전에 완료되었는지 여부</returns>
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)
         {
             _resetEvent.Reset();
@@ -207,11 +207,11 @@ try
         }
 
         /// <summary>
-        /// IExternalEventHandler.GetName 实现
+        /// IExternalEventHandler.GetName 구현
         /// </summary>
         public string GetName()
         {
-            return "标记墙";
+            return "벽 태깅";
         }
 
         /// <summary>

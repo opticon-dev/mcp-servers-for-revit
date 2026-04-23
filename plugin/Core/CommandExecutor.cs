@@ -26,30 +26,30 @@ namespace revit_mcp_plugin.Core
         {
             try
             {
-                // 查找命令
+                // 명령 찾기
                 // Find command
                 if (!_commandRegistry.TryGetCommand(request.Method, out var command))
                 {
-                    _logger.Warning("未找到命令: {0}\nCommand not found: {0}", request.Method);
+                    _logger.Warning("명령을 찾을 수 없음: {0}\nCommand not found: {0}", request.Method);
                     return CreateErrorResponse(request.Id,
                         JsonRPCErrorCodes.MethodNotFound,
-                        $"未找到方法: '{request.Method}'\nMethod not found: '{request.Method}'");
+                        $"메서드를 찾을 수 없음: '{request.Method}'\nMethod not found: '{request.Method}'");
                 }
 
-                _logger.Info("执行命令: {0}", request.Method);
+                _logger.Info("명령 실행: {0}", request.Method);
 
-                // 执行命令
+                // 명령 실행
                 // Execute command
                 try
                 {
                     object result = command.Execute(request.GetParamsObject(), request.Id);
-                    _logger.Info("命令 {0} 执行成功\nCommand {0} executed successfully.", request.Method);
+                    _logger.Info("명령 {0} 실행 성공\nCommand {0} executed successfully.", request.Method);
 
                     return CreateSuccessResponse(request.Id, result);
                 }
                 catch (CommandExecutionException ex)
                 {
-                    _logger.Error("命令 {0} 执行失败: {1}\nCommand {0} failed to execute: {1}", request.Method, ex.Message);
+                    _logger.Error("명령 {0} 실행 실패: {1}\nCommand {0} failed to execute: {1}", request.Method, ex.Message);
                     return CreateErrorResponse(request.Id,
                         ex.ErrorCode,
                         ex.Message,
@@ -57,7 +57,7 @@ namespace revit_mcp_plugin.Core
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error("命令 {0} 执行时发生异常: {1}\nAn exception occurred while executing command {0}: {1}", request.Method, ex.Message);
+                    _logger.Error("명령 {0} 실행 중 예외 발생: {1}\nAn exception occurred while executing command {0}: {1}", request.Method, ex.Message);
                     return CreateErrorResponse(request.Id,
                         JsonRPCErrorCodes.InternalError,
                         ex.Message);
@@ -65,10 +65,10 @@ namespace revit_mcp_plugin.Core
             }
             catch (Exception ex)
             {
-                _logger.Error("执行命令处理过程中发生异常: {0}\nAn exception has occurred durion command execution: {0}", ex.Message);
+                _logger.Error("명령 실행 처리 과정에서 예외 발생: {0}\nAn exception has occurred durion command execution: {0}", ex.Message);
                 return CreateErrorResponse(request.Id,
                     JsonRPCErrorCodes.InternalError,
-                    $"内部错误: {ex.Message}\nInternal error: {ex.Message}");
+                    $"내부 오류: {ex.Message}\nInternal error: {ex.Message}");
             }
         }
 

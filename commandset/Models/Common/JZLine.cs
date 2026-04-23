@@ -3,19 +3,19 @@
 namespace RevitMCPCommandSet.Models.Common;
 
 /// <summary>
-///     三维线段
+///     3차원 선분
 /// </summary>
 public class JZLine
 {
     /// <summary>
-    ///     构造函数
+    ///     생성자
     /// </summary>
     public JZLine()
     {
     }
 
     /// <summary>
-    ///     构造函数
+    ///     생성자
     /// </summary>
     public JZLine(JZPoint p0, JZPoint p1)
     {
@@ -24,14 +24,14 @@ public class JZLine
     }
 
     /// <summary>
-    ///     四个double作为参数的构造函数
+    ///     4개의 double을 매개변수로 받는 생성자
     /// </summary>
-    /// <param name="x0">起点X坐标</param>
-    /// <param name="y0">起点Y坐标</param>
-    /// <param name="z0">起点Z坐标</param>
-    /// <param name="x1">终点X坐标</param>
-    /// <param name="y1">终点Y坐标</param>
-    /// <param name="z1">终点Z坐标</param>
+    /// <param name="x0">시작점 X 좌표</param>
+    /// <param name="y0">시작점 Y 좌표</param>
+    /// <param name="z0">시작점 Z 좌표</param>
+    /// <param name="x1">끝점 X 좌표</param>
+    /// <param name="y1">끝점 Y 좌표</param>
+    /// <param name="z1">끝점 Z 좌표</param>
     public JZLine(double x0, double y0, double z0, double x1, double y1, double z1)
     {
         P0 = new JZPoint(x0, y0, z0);
@@ -39,14 +39,14 @@ public class JZLine
     }
 
     /// <summary>
-    ///     四个double作为参数的构造函数
+    ///     4개의 double을 매개변수로 받는 생성자
     /// </summary>
-    /// <param name="x0">起点X坐标</param>
-    /// <param name="y0">起点Y坐标</param>
-    /// <param name="z0">起点Z坐标</param>
-    /// <param name="x1">终点X坐标</param>
-    /// <param name="y1">终点Y坐标</param>
-    /// <param name="z1">终点Z坐标</param>
+    /// <param name="x0">시작점 X 좌표</param>
+    /// <param name="y0">시작점 Y 좌표</param>
+    /// <param name="z0">시작점 Z 좌표</param>
+    /// <param name="x1">끝점 X 좌표</param>
+    /// <param name="y1">끝점 Y 좌표</param>
+    /// <param name="z1">끝점 Z 좌표</param>
     public JZLine(double x0, double y0, double x1, double y1)
     {
         P0 = new JZPoint(x0, y0, 0);
@@ -54,26 +54,26 @@ public class JZLine
     }
 
     /// <summary>
-    ///     起点
+    ///     시작점
     /// </summary>
     [JsonProperty("p0")]
     public JZPoint P0 { get; set; }
 
     /// <summary>
-    ///     终点
+    ///     끝점
     /// </summary>
     [JsonProperty("p1")]
     public JZPoint P1 { get; set; }
 
     /// <summary>
-    ///     获取线段的长度
+    ///     선분의 길이를 가져오기
     /// </summary>
     public double GetLength()
     {
         if (P0 == null || P1 == null)
             throw new InvalidOperationException("JZLine must have both P0 and P1 defined to calculate length.");
 
-        // 计算三维点之间的距离
+        // 3차원 점 사이의 거리 계산
         var dx = P1.X - P0.X;
         var dy = P1.Y - P0.Y;
         var dz = P1.Z - P0.Z;
@@ -82,32 +82,32 @@ public class JZLine
     }
 
     /// <summary>
-    ///     获取线段的方向
-    ///     返回一个归一化的 JZPoint 表示方向向量
+    ///     선분의 방향을 가져오기
+    ///     정규화된 JZPoint를 방향 벡터로 반환
     /// </summary>
     public JZPoint GetDirection()
     {
         if (P0 == null || P1 == null)
             throw new InvalidOperationException("JZLine must have both P0 and P1 defined to calculate direction.");
 
-        // 计算方向向量
+        // 방향 벡터 계산
         var dx = P1.X - P0.X;
         var dy = P1.Y - P0.Y;
         var dz = P1.Z - P0.Z;
 
-        // 计算向量的模
+        // 벡터의 크기 계산
         var length = Math.Sqrt(dx * dx + dy * dy + dz * dz);
 
         if (length == 0)
             throw new InvalidOperationException("Cannot determine direction for a line with zero length.");
 
-        // 返回归一化向量
+        // 정규화된 벡터 반환
         return new JZPoint(dx / length, dy / length, dz / length);
     }
 
     /// <summary>
-    ///     转换为Revit的Line
-    ///     单位转换：mm -> ft
+    ///     Revit의 Line으로 변환
+    ///     단위 변환: mm -> ft
     /// </summary>
     public static Line ToLine(JZLine jzLine)
     {

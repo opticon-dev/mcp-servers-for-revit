@@ -298,7 +298,7 @@ namespace RevitMCPCommandSet.Services
                     // For Revit 2022-，Code changes pending approval
                     if (parameter.Definition is Autodesk.Revit.DB.InternalDefinition internalDef)
                     {
-                        // 检查是否为已知的布尔类型内置参数 (仅使用Revit 2019中确认存在的参数)
+                        // 알려진 불리언 타입의 내장 파라미터인지 확인 (Revit 2019에 존재함이 확인된 파라미터만 사용)
                         BuiltInParameter bip = internalDef.BuiltInParameter;
                         if (bip == BuiltInParameter.IS_VISIBLE_PARAM ||
                             bip == BuiltInParameter.WALL_ATTR_ROOM_BOUNDING ||
@@ -307,15 +307,15 @@ namespace RevitMCPCommandSet.Services
                             return parameter.AsInteger() == 1 ? "True" : "False";
                         }
 
-                        // 尝试通过参数名称识别布尔参数
+                        // 파라미터 이름을 통해 불리언 파라미터 식별 시도
                         string paramName = parameter.Definition.Name.ToLower();
-                        if (paramName.Contains("是否") ||
+                        if (paramName.Contains("여부") ||
                             paramName.Contains("yes/no") ||
                             paramName.Contains("true/false") ||
                             paramName.Contains("visible") ||
                             paramName.Contains("visibility"))
                         {
-                            // 检查存储类型为整数且值为0或1
+                            // 저장 타입이 정수이고 값이 0 또는 1인지 확인
                             if (parameter.StorageType == StorageType.Integer)
                             {
                                 int intValue = parameter.AsInteger();
@@ -326,12 +326,12 @@ namespace RevitMCPCommandSet.Services
                             }
                         }
 
-                        // 尝试通过储存类型和值字符串识别布尔参数
+                        // 저장 타입과 값 문자열을 통해 불리언 파라미터 식별 시도
                         if (parameter.StorageType == StorageType.Integer)
                         {
                             string valueString = parameter.AsValueString();
                             if (!string.IsNullOrEmpty(valueString) &&
-                                (valueString == "是" || valueString == "否" ||
+                                (valueString == "예" || valueString == "아니오" ||
                                  valueString == "Yes" || valueString == "No"))
                             {
                                 return parameter.AsInteger() == 1 ? "True" : "False";
@@ -339,7 +339,7 @@ namespace RevitMCPCommandSet.Services
                         }
                     }
 
-                    // 默认返回参数值
+                    // 기본적으로 파라미터 값 반환
                     return parameter.AsValueString() ?? parameter.AsInteger().ToString();
                     //throw new NotImplementedException();
 #endif

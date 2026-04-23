@@ -12,23 +12,23 @@ namespace RevitMCPCommandSet.Services
         private Document doc => uiDoc.Document;
         private Autodesk.Revit.ApplicationServices.Application app => uiApp.Application;
         /// <summary>
-        /// 事件等待对象
+        /// 이벤트 대기 객체
         /// </summary>
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
         /// <summary>
-        /// 创建数据（传入数据）
+        /// 생성 데이터 (입력 데이터)
         /// </summary>
         public List<SurfaceElement> CreatedInfo { get; private set; }
         /// <summary>
-        /// 执行结果（传出数据）
+        /// 실행 결과 (출력 데이터)
         /// </summary>
         public AIResult<List<int>> Result { get; private set; }
-        public string _floorName = "常规 - ";
+        public string _floorName = "일반 - ";
         public bool _structural = true;
         private List<string> _warnings = new List<string>();
 
         /// <summary>
-        /// 设置创建的参数
+        /// 생성 파라미터 설정
         /// </summary>
         public void SetParameters(List<SurfaceElement> data)
         {
@@ -46,11 +46,11 @@ namespace RevitMCPCommandSet.Services
                 foreach (var data in CreatedInfo)
                 {
                     int requestedTypeId = data.TypeId;
-                    // Step0 获取构件类型
+                    // Step0 구성요소 타입 가져오기
                     BuiltInCategory builtInCategory = BuiltInCategory.INVALID;
                     Enum.TryParse(data.Category.Replace(".", "").Replace("BuiltInCategory", ""), true, out builtInCategory);
 
-                    // Step1 获取标高和偏移
+                    // Step1 레벨 및 오프셋 가져오기
                     Level baseLevel = null;
                     Level topLevel = null;
                     double topOffset = -1;  // ft
@@ -62,7 +62,7 @@ namespace RevitMCPCommandSet.Services
                     if (baseLevel == null)
                         continue;
 
-                    // Step2 获取族类型
+                    // Step2 패밀리 타입 가져오기
                     FamilySymbol symbol = null;
                     FloorType floorType = null;
                     RoofType roofType = null;
@@ -76,7 +76,7 @@ namespace RevitMCPCommandSet.Services
                             if (typeEle != null && typeEle is FamilySymbol)
                             {
                                 symbol = typeEle as FamilySymbol;
-                                // 获取symbol的Category对象并转换为BuiltInCategory枚举
+                                // symbol의 Category 객체를 가져와 BuiltInCategory 열거형으로 변환
                                 builtInCategory = (BuiltInCategory)symbol.Category.Id.GetIntValue();
                             }
                             else if (typeEle != null && typeEle is FloorType)
@@ -167,7 +167,7 @@ namespace RevitMCPCommandSet.Services
                                     .OfClass(typeof(FamilySymbol))
                                     .OfCategory(builtInCategory)
                                     .Cast<FamilySymbol>()
-                                    .FirstOrDefault(fs => fs.IsActive); // 获取激活的类型作为默认类型
+                                    .FirstOrDefault(fs => fs.IsActive); // 활성화된 타입을 기본 타입으로 가져오기
                                 if (symbol == null)
                                 {
                                     symbol = new FilteredElementCollector(doc)
@@ -182,9 +182,9 @@ namespace RevitMCPCommandSet.Services
                             break;
                     }
 
-                    // Step3 批量创建楼板
+                    // Step3 바닥 일괄 생성
                     Floor floor = null;
-                    using (Transaction transaction = new Transaction(doc, "创建面状构件"))
+                    using (Transaction transaction = new Transaction(doc, "면형 구성요소 생성"))
                     {
                         transaction.Start();
 
@@ -198,13 +198,13 @@ namespace RevitMCPCommandSet.Services
                                 }
                                 CurveLoop curveLoop = CurveLoop.Create(data.Boundary.OuterLoop.Select(l => JZLine.ToLine(l) as Curve).ToList());
 
-                                // 多版本 - Floor.Create introduced in Revit 2022 but stable in 2023+
+                                // 다중 버전 - Floor.Create는 Revit 2022에서 도입되었으나 2023+에서 안정화됨
 #if REVIT2023_OR_GREATER
                                 floor = Floor.Create(doc, new List<CurveLoop> { curveLoop }, floorType.Id, baseLevel.Id);
 #else
                                 floor = doc.Create.NewFloor(curves, floorType, baseLevel, _structural);
 #endif
-                                //编辑楼板参数
+                                // 바닥 파라미터 편집
                                 if (floor != null)
                                 {
                                     floor.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM).Set(baseOffset);
@@ -282,21 +282,21 @@ namespace RevitMCPCommandSet.Services
                 Result = new AIResult<List<int>>
                 {
                     Success = false,
-                    Message = $"创建面状构件时出错: {ex.Message}",
+                    Message = $"면형 구성요소 생성 중 오류: {ex.Message}",
                 };
-                TaskDialog.Show("错误", $"创建面状构件时出错: {ex.Message}");
+                TaskDialog.Show("오류", $"면형 구성요소 생성 중 오류: {ex.Message}");
             }
             finally
             {
-                _resetEvent.Set(); // 通知等待线程操作已完成
+                _resetEvent.Set(); // 대기 스레드에게 작업 완료 알림
             }
         }
 
         /// <summary>
-        /// 等待创建完成
+        /// 생성 완료 대기
         /// </summary>
-        /// <param name="timeoutMilliseconds">超时时间（毫秒）</param>
-        /// <returns>操作是否在超时前完成</returns>
+        /// <param name="timeoutMilliseconds">타임아웃 시간 (밀리초)</param>
+        /// <returns>작업이 타임아웃 이전에 완료되었는지 여부</returns>
         public bool WaitForCompletion(int timeoutMilliseconds = 10000)
         {
             _resetEvent.Reset();
@@ -304,61 +304,61 @@ namespace RevitMCPCommandSet.Services
         }
 
         /// <summary>
-        /// IExternalEventHandler.GetName 实现
+        /// IExternalEventHandler.GetName 구현
         /// </summary>
         public string GetName()
         {
-            return "创建面状构件";
+            return "면형 구성요소 생성";
         }
 
         /// <summary>
-        /// 获取或创建指定厚度的楼板类型
+        /// 지정된 두께의 바닥 타입을 가져오거나 생성
         /// </summary>
-        /// <param name="thickness">目标厚度（ft）</param>
-        /// <returns>符合厚度要求的楼板类型</returns>
+        /// <param name="thickness">목표 두께 (ft)</param>
+        /// <returns>두께 요구사항에 부합하는 바닥 타입</returns>
         private FloorType CreateOrGetFloorType(Document doc, double thickness = 200 / 304.8)
         {
 
-            // 查找匹配厚度的楼板类型
+            // 두께에 일치하는 바닥 타입 찾기
             FloorType existingType = new FilteredElementCollector(doc)
-                                     .OfClass(typeof(FloorType))                    // 仅获取FloorType类
-                                     .OfCategory(BuiltInCategory.OST_Floors)        // 仅获取楼板类别
-                                     .Cast<FloorType>()                            // 转换为FloorType类型
+                                     .OfClass(typeof(FloorType))                    // FloorType 클래스만 가져오기
+                                     .OfCategory(BuiltInCategory.OST_Floors)        // 바닥 카테고리만 가져오기
+                                     .Cast<FloorType>()                            // FloorType 타입으로 변환
                                      .FirstOrDefault(w => w.Name == $"{_floorName}{thickness * 304.8}mm");
             if (existingType != null)
                 return existingType;
-            // 如果没有找到匹配的楼板类型，创建新的
+            // 일치하는 바닥 타입을 찾지 못하면 새로 생성
             FloorType baseFloorType = existingType = new FilteredElementCollector(doc)
-                                     .OfClass(typeof(FloorType))                    // 仅获取FloorType类
-                                     .OfCategory(BuiltInCategory.OST_Floors)        // 仅获取楼板类别
-                                     .Cast<FloorType>()                            // 转换为FloorType类型
-                                     .FirstOrDefault(w => w.Name.Contains("常规"));
+                                     .OfClass(typeof(FloorType))                    // FloorType 클래스만 가져오기
+                                     .OfCategory(BuiltInCategory.OST_Floors)        // 바닥 카테고리만 가져오기
+                                     .Cast<FloorType>()                            // FloorType 타입으로 변환
+                                     .FirstOrDefault(w => w.Name.Contains("일반"));
             if (existingType != null)
             {
                 baseFloorType = existingType = new FilteredElementCollector(doc)
-                                     .OfClass(typeof(FloorType))                    // 仅获取FloorType类
-                                     .OfCategory(BuiltInCategory.OST_Floors)        // 仅获取楼板类别
-                                     .Cast<FloorType>()                            // 转换为FloorType类型
+                                     .OfClass(typeof(FloorType))                    // FloorType 클래스만 가져오기
+                                     .OfCategory(BuiltInCategory.OST_Floors)        // 바닥 카테고리만 가져오기
+                                     .Cast<FloorType>()                            // FloorType 타입으로 변환
                                      .FirstOrDefault();
             }
 
-            // 复制楼板类型
+            // 바닥 타입 복제
             FloorType newFloorType = null;
             newFloorType = baseFloorType.Duplicate($"{_floorName}{thickness * 304.8}mm") as FloorType;
 
-            // 设置新楼板类型的厚度
-            // 获取构造层设置
+            // 새 바닥 타입의 두께 설정
+            // 구조층 설정 가져오기
             CompoundStructure cs = newFloorType.GetCompoundStructure();
             if (cs != null)
             {
-                // 获取所有层
+                // 모든 레이어 가져오기
                 IList<CompoundStructureLayer> layers = cs.GetLayers();
                 if (layers.Count > 0)
                 {
-                    // 计算当前总厚度
+                    // 현재 총 두께 계산
                     double currentTotalThickness = cs.GetWidth();
 
-                    // 按比例调整每层厚度
+                    // 비율에 따라 각 레이어 두께 조정
                     for (int i = 0; i < layers.Count; i++)
                     {
                         CompoundStructureLayer layer = layers[i];
@@ -366,7 +366,7 @@ namespace RevitMCPCommandSet.Services
                         cs.SetLayerWidth(i, newLayerThickness);
                     }
 
-                    // 应用修改后的构造层设置
+                    // 수정된 구조층 설정 적용
                     newFloorType.SetCompoundStructure(cs);
                 }
             }

@@ -4,7 +4,7 @@ import { withRevitConnection } from "../utils/ConnectionManager.js";
 export function registerGetCurrentViewInfoTool(server: McpServer) {
   server.tool(
     "get_current_view_info",
-    "获取 Revit 当前活动视图的详细信息，包括视图类型、名称、比例等属性。",
+    "Revit 현재 활성 뷰의 상세 정보(뷰 유형, 이름, 축척 등의 속성 포함)를 가져옵니다.",
     {},
     async (args, extra) => {
       try {

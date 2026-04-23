@@ -3,18 +3,18 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerTools } from "./tools/register.js";
 
-// 创建服务器实例
+// 서비스 인스턴스 생성
 const server = new McpServer({
   name: "mcp-server-for-revit",
   version: "1.0.0",
 });
 
-// 启动服务器
+// 서버 시작
 async function main() {
-  // 注册工具
+  // 도구 등록
   await registerTools(server);
 
-  // 连接到传输层
+  // 전송 계층에 연결
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("Revit MCP Server start success");

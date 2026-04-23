@@ -3,17 +3,17 @@
 public class AIResult<T>
 {
     /// <summary>
-    ///     是否成功
+    ///     성공 여부
     /// </summary>
     public bool Success { get; set; }
 
     /// <summary>
-    ///     消息
+    ///     메시지
     /// </summary>
     public string Message { get; set; }
 
     /// <summary>
-    ///     返回数据
+    ///     반환 데이터
     /// </summary>
     public T Response { get; set; }
 }

@@ -12,7 +12,7 @@ namespace revit_mcp_plugin.Core
         {
             try
             {
-                // 获取socket服务
+                // socket 서비스 가져오기
                 // Obtain socket service.
                 SocketService service = SocketService.Instance;
 

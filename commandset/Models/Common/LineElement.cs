@@ -3,7 +3,7 @@
 namespace RevitMCPCommandSet.Models.Common;
 
 /// <summary>
-/// 线状构件
+/// 선형 구성요소
 /// </summary>
 public class LineElement
 {
@@ -13,49 +13,49 @@ public class LineElement
     }
 
     /// <summary>
-    ///     构件类型
+    ///     구성요소 타입
     /// </summary>
     [JsonProperty("category")]
     public string Category { get; set; } = "INVALID";
 
     /// <summary>
-    ///     类型Id
+    ///     타입 ID
     /// </summary>
     [JsonProperty("typeId")]
     public int TypeId { get; set; } = -1;
 
     /// <summary>
-    ///     路径曲线
+    ///     경로 곡선
     /// </summary>
     [JsonProperty("locationLine")]
     public JZLine LocationLine { get; set; }
 
     /// <summary>
-    ///     厚度
+    ///     두께
     /// </summary>
     [JsonProperty("thickness")]
     public double Thickness { get; set; }
 
     /// <summary>
-    ///     高度
+    ///     높이
     /// </summary>
     [JsonProperty("height")]
     public double Height { get; set; }
 
     /// <summary>
-    ///     底部标高
+    ///     하단 레벨
     /// </summary>
     [JsonProperty("baseLevel")]
     public double BaseLevel { get; set; }
 
     /// <summary>
-    ///     底部偏移/基于面的偏移
+    ///     하단 오프셋 / 면 기반 오프셋
     /// </summary>
     [JsonProperty("baseOffset")]
     public double BaseOffset { get; set; }
 
     /// <summary>
-    ///     参数化属性
+    ///     매개변수 속성
     /// </summary>
     [JsonProperty("parameters")]
     public Dictionary<string, double> Parameters { get; set; }
